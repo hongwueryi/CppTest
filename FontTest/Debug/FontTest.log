@@ -1,0 +1,4 @@
+﻿  FontManager.cpp
+e:\mycode\demo\cpptest\fonttest\fontmanager.cpp(77): warning C4477: “printf”: 格式字符串“%s”需要类型“char *”的参数，但可变参数 1 拥有了类型“ATL::CString”
+  FontTest.vcxproj -> E:\Mycode\Demo\CppTest\Debug\FontTest.exe
+  FontTest.vcxproj -> E:\Mycode\Demo\CppTest\Debug\FontTest.pdb (Full PDB)

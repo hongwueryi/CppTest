@@ -1,0 +1,9 @@
+﻿  Building 'KMDF Driver2' with toolset 'WindowsKernelModeDriver10.0' and the 'Universal' target platform.
+  Stamping Debug\KMDFDriver2.inf [Version] section with DriverVer=06/22/2021,16.35.22.581
+  Device.c
+e:\mycode\demo\cpptest\kmdf driver2\driver.h(17): fatal error C1083: 无法打开包括文件: “ntddk.h”: No such file or directory
+  Driver.c
+e:\mycode\demo\cpptest\kmdf driver2\driver.h(17): fatal error C1083: 无法打开包括文件: “ntddk.h”: No such file or directory
+  Queue.c
+e:\mycode\demo\cpptest\kmdf driver2\driver.h(17): fatal error C1083: 无法打开包括文件: “ntddk.h”: No such file or directory
+  正在生成代码...

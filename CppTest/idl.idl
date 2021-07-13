@@ -1,0 +1,1151 @@
+/******************************************************************************
+* This program is protected under international and US copyright laws as      *
+* an unpublished work. This program is confidential and proprietary to the    *
+* copyright owners. Reproduction or disclosure, in whole or in part, or the   *
+* production of derivative works therefrom without the express permission of  *
+* the copyright owners, is prohibited.                                        *
+*                                                                             *
+*              Copyright (C) 2013-2017 by Dolby Laboratories.                 *
+*                            All rights reserved.                             *
+******************************************************************************/
+
+/**
+* @file
+* @brief Defines the DAX3 2.0 RPC APIs.
+*
+*
+*/
+
+import "oaidl.idl";
+import "unknwn.idl";
+
+[uuid (906B0CE0-C70B-1067-B317-00DD010662DA),
+version(1.0),
+pointer_default(unique),
+]
+interface RpcInterface
+{
+
+	// context_handle_noserialize in acf for RPC to call rundown when the client goes away
+	typedef [context_handle] void* PCONTEXT_HANDLE_TYPE;
+	typedef [ref] PCONTEXT_HANDLE_TYPE * PPCONTEXT_HANDLE_TYPE;
+
+	//
+	// RPC methods to retrieve/clean client context
+	//
+	/**
+	* @brief RPC method to retrieve RPC context handle.
+	*
+	* Use this function to connect to the RPC server.
+	*
+	*/
+	void RemoteOpen([in] handle_t hBinding, /**< [in] RPC binding handle. */
+		[out] PPCONTEXT_HANDLE_TYPE pphContext /**< [out] RPC context handle. */);
+
+	/**
+	* @brief RPC method to close RPC context handle.
+	*
+	* Use this function to disconnect from the RPC server.
+	*
+	*/
+	void RemoteClose([in, out] PPCONTEXT_HANDLE_TYPE pphContext /**< [in, out] RPC context handle. */);
+
+	//
+	// Version Number
+	//
+	/**
+	* @brief Get the server version number.
+	*
+	* Use this function to get the server version number.
+	* Client can use this version number to call supported API.
+	*
+	*/
+	void GetVersionNumber(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] long* pV1, /**<[out] Major version */
+		[out] long* pV2, /**<[out] Minor version */
+		[out] long* pV3, /**<[out] Build number */
+		[out] long* pV4 /**<[out] ignored */
+	);
+
+	//
+	// Call Back
+	//
+	/**
+	* @brief Start to wait for call back event.
+	*
+	* This function will not return until RPC is closed.
+	*
+	*/
+	void WaitForEventCallback(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in, optional] __int64 context /**< [in, optional] RPC context handle. */);
+
+	//
+	// IDAXManager Interface
+	//
+
+	/**
+	* @brief Initializes the DAX system as a specific user.
+	*
+	* The DAX3 system supports user access control. Use this function to grant the access right to a user.
+	* This function is optional. If it is not called, the default access right will be granted.
+	* With default access, a user can only use the get functionality for all the DAXManager features and will
+	* not have access to set any of the features.
+	*
+	*/
+	void InitializeDAX(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] BSTR userName,/**< [in] Please ask for the userName from your Dolby contact if you need to call this function. */
+		[out] VARIANT_BOOL* /**< [out] pRetVal true if operation is valid, false if not. */);
+
+	/**
+	* @brief Get the Dolby enablement status.
+	*
+	*/
+	void GetDolbyEnable(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] VARIANT_BOOL* pRetVal /**< [out] true if ON, false if OFF. */);
+
+	/**
+	* @brief Set the Dolby enablement status.
+	*
+	*/
+	void SetDolbyEnable(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] VARIANT_BOOL value /**< [in] true if ON, false if OFF. */);
+
+	/**
+	* @brief Get the active profile.
+	*
+	* There are currently 6 profiles.
+	* @n 0 = Movie, 1 = Music, 2 = Game, 3 = Voice, 4 = Personalize , 5 = Dynamic.
+	* @n The "Dynamic" profile, identified as 5, is not supported on DSP version of DAX3.
+	*
+	*/
+	void GetActiveProfile(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] long* pRetVal /**< [out] active profile. */);
+
+	/**
+	* @brief Set the active profile.
+	*
+	* There are currently 6 profiles.
+	* @n 0 = Movie, 1 = Music, 2 = Game, 3 = Voice, 4 = Personalize , 5 = Dynamic.
+	* @n The "Dynamic" profile, identified as 5, is not supported on DSP version of DAX3.
+	*
+	*/
+	void SetActiveProfile(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] long pRetVal /**< [in] active profile. */);
+
+	/**
+	* @brief Get the Surround Virtualizer enablement status.
+	*
+	* 0 = Disable, 1 = Enable, -1 = Not Available.
+	* @n This feature is not allowed to be changed while DolbyEnable is false.
+	*/
+	void GetSurroundVirtualizerEnable(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] long* pRetVal /**< [out] Surround Virtualizer enablement status. */);
+
+	/**
+	* @brief Set the Surround Virtualizer enablement status.
+	*
+	* 0 = Disable, 1 = Enable, -1 = Not Available.
+	* @n This feature is not allowed to be changed while DolbyEnable is false.
+	*/
+	void SetSurroundVirtualizerEnable(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] long pRetVal /**< [in] Surround Virtualizer enablement status. */);
+
+	/**
+	* @brief Get the Dialog Enhancer enablement status.
+	*
+	* 0 = Disable, 1 = Enable, -1 = Not Available.
+	* @n This feature is not allowed to be changed while DolbyEnable is false.
+	*/
+	void GetDialogEnhancerEnable(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] long* pRetVal /**< [out] Dialog Enhancer enablement status. */);
+
+	/**
+	* @brief Set the Dialog Enhancer enablement status.
+	*
+	* 0 = Disable, 1 = Enable, -1 = Not Available.
+	* @n This feature is not allowed to be changed while DolbyEnable is false.
+	*/
+	void SetDialogEnhancerEnable(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] long pRetVal /**< [in] Dialog Enhancer enablement status. */);
+
+	/**
+	* @brief Get the Volume Leveler enablement status.
+	*
+	* 0 = Disable, 1 = Enable, -1 = Not Available.
+	* @n This feature is not allowed to be changed while DolbyEnable is false.
+	*/
+	void GetVolumeLevelerEnable(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] long* pRetVal /**< [out] Volume Leveler enablement status. */);
+
+	/**
+	* @brief Set the Volume Leveler enable status.
+	*
+	* 0 = Disable, 1 = Enable, -1 = Not Available.
+	* @n This feature is not allowed to be changed while DolbyEnable is false.
+	*/
+	void SetVolumeLevelerEnable(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] long pRetVal /**< [in] Volume Leveler enablement status. */);
+
+	/**
+	* @brief Get the Bass Enhancer enable status.
+	*
+	* 0 = Disable, 1 = Enable, -1 = Not Available.
+	* @n This feature is not allowed to be changed while DolbyEnable is false.
+	* @n This feature is not supported on the DSP version of DAX3.
+	*/
+	void GetBassEnhancerEnable(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] long* pRetVal /**< [out] Bass Enhancer enable status. */);
+
+	/**
+	* @brief Set the Bass Enhancer enablement status.
+	*
+	* 0 = Disable, 1 = Enable, -1 = Not Available.
+	* @n This feature is not allowed to be changed while DolbyEnable is false.
+	* @n This feature is not supported on the DSP version of DAX3.
+	*/
+	void SetBassEnhancerEnable(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] long pRetVal /**< [in] Bass Enhancer enablement status. */);
+
+	/**
+	* @brief Get the GEQ levels.
+	*
+	* Valid range: min = -192, max = 192, array size = 20
+	* @n This feature is not allowed to be changed while DolbyEnable is false.
+	*/
+	void GetGEQLevels(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] SAFEARRAY(long)* pRetVal /**< [out] GEQ levels. */);
+
+	/**
+	* @brief Set the GEQ levels.
+	*
+	* Valid range: min = -192, max = 192, array size = 20
+	* @n This feature is not allowed to be changed while DolbyEnable is false.
+	*/
+	void SetGEQLevels(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] SAFEARRAY(long) pRetVal /**< [in] GEQ levels. */);
+
+	/**
+	* @brief Reset the GEQ levels.
+	*
+	* Reset all bands of GEQ levels to 0.
+	*/
+	void ResetGEQ(
+		[in] PCONTEXT_HANDLE_TYPE phContext /**< [in] RPC context handle. */);
+
+	/**
+	* @brief Get the current mode of device.
+	*
+	* Some device supports multiple modes such as Laptop, Tablet, Stand, and Tent.
+	*
+	*/
+	void GetDeviceMode(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] long* pRetVal /**< [out] The index of current mode if it is supported by the current device. -1 if not. */);
+
+	/**
+	* @brief Get the mode count of the device.
+	*
+	* Do not use this function to determine whether the multiple mode feature is supported or not. Use DeviceMode instead.
+	*/
+	void GetDeviceModeCount(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] long* pRetVal /**< [out] mode count of device. */);
+
+	/**
+	* @brief Get the name of each mode.
+	*
+	*/
+	void GetDeviceModeName(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] long index, /**< [in] The index of mode. */
+		[out] BSTR* pRetVal /**< [out] Readable name of mode. */);
+
+	/**
+	* @brief Get the icon data of each mode.
+	*
+	*/
+	void GetDeviceModeIcon(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] long index, /**< [in] The index of mode. */
+		[out] BSTR* pRetVal /**< [out] data path of mode. */);
+
+	/**
+	* @brief Get the current system operator information.
+	*
+	* This method is used to get the operator information.
+	* Returns NULL if no operator info is available for the system.
+	*/
+	void GetOperatorInfo(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] BSTR* pRetVal /**< [out] Operator logo vector image path information if available as string. */);
+
+	/**
+	* @brief Get the current system capabilities.
+	*
+	* Use this method to get the enabled features on the system to help enable or disabled
+	* UI components and 3rd party users API calls.
+	*
+	* The parameters indicate whether the Dolby Audio feature is enabled.
+	*/
+	void GetSystemCapabilities(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] short* MediaIntelligenceEnabled, /**< [out] Media Intelligence */
+		[out] short* VolumeLevelerEnabled, /**< [out] Volume Leveler */
+		[out] short* DialogEnchancerEnabled, /**< [out] Dialog Enhancer */
+		[out] short* VirtualBassEnabled, /**< [out] Virtual Bass */
+		[out] short* BassEnchancerEnabled, /**< [out] Bass Enhancer */
+		[out] short* SpeakerVirtualizerEnabled, /**< [out] Surround Virtualizer for Speaker */
+		[out] short* HeadphoneVirtualizerEnabled, /**< [out] Surround Virtualizer for Headphone */
+		[out] short* GEQEnabled, /**< [out] Graphic Equalizer */
+		[out] short* IEQEnabled, /**< [out] Intelligent Equalizer */
+		[out] short* AudioOptimizerEnabled, /**< [out] Audio Optimizer */
+		[out] short* AudioRegulatorEnabled, /**< [out] Audio Regulator */
+		[out] short* SurroundDecoderEnabled, /**< [out] Surround Decoder */
+		[out] short* VolumeMaximizerEnabled /**< [out] Volume Maximizer */);
+
+	/**
+	* @brief Get the GEQ maximum range.
+	*
+	* Use this feature to get the operator information.
+	* Returns NULL if no operator info is available for the system.
+	*/
+	void GetGEQMaximumRange(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] long* pRetVal /**< [out] GEQ maximum range. */);
+
+	//
+	// IDAXAdvanced Interface
+	//
+	/**
+	* @brief Get the status value of DAX3 API Service. The status value is bitwise flag and can be combined by OR operator.
+	* 0x00000000: Normal,
+	* 0x00000001: Locked by Demo,
+	* 0x00000002: Locked by DTT,
+	* 0x00000004: Tuning file not exist
+	*
+	*/
+	void GetAPIStatus(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] long* pRetVal /**< [out] The status of API Service. */);
+
+	//
+	// IDAXEndpoint Interface
+	//
+	/**
+	* @brief Get the number of active audio render endpoints.
+	*
+	*/
+	void GetEndpointCount(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] long* pRetVal /**< [out] Count of active endpoints. */);
+
+	/**
+	* @brief Get specified endpoint information
+	*
+	* This method returns detailed information about a specific endpoint, including readable name, form factor, hardware offload and default state.
+	*
+	* The formFactor is defined as follows by Microsoft.
+	@verbatim
+	enum EndpointFormFactor
+	{
+	RemoteNetworkDevice,
+	Speakers,
+	LineLevel,
+	Headphones,
+	Microphone,
+	Headset,
+	Handset,
+	UnknownDigitalPassthrough,
+	SPDIF,
+	DigitalAudioDisplayDevice,
+	UnknownFormFactor,
+	EndpointFormFactor_enum_count
+	};
+	@endverbatim
+	*/
+	void GetEndpointData(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] long nIndex, /**< [in] Zero based index of the endpoint. */
+		[out] BSTR* friendlyName, /**< [out] Readable name of the endpoint. */
+		[out] unsigned long* formFactor, /**< [out] Form factor of the endpoint.*/
+		[out] VARIANT_BOOL* offloaded, /**< [out] Indicate if the endpoint is rendering via DSP chip or not. */
+		[out] VARIANT_BOOL* defaultDevice /**< [out] Indicate if the endpoint is the default audio render device or not. */);
+
+	/**
+	* @brief Get the number of available peripheral tunings in DAX.
+	*
+	*/
+	void GetPeripheralCount(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] long* pRetVal /**< [out] Count of available peripheral tunings */);
+
+	/**
+	* @brief Get specific peripheral tuning information.
+	*
+	* This method returns detailed information about a specific peripheral tuning, including brand name, model name, and the logo.
+	*
+	*/
+	void GetPeripheralData(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] long index, /**< [in] Zero based index of the peripheral. */
+		[out] BSTR* brand, /**< [out] Brand name of the peripheral. */
+		[out] BSTR* model, /**< [out] Model name of the peripheral. */
+		[out] SAFEARRAY(unsigned char)* deviceBitmap /**< [out] If the value is null, it means there is no logo information for this peripheral, otherwise deviceBitmap is the logo image of this peripheral in bitmap format as byte array. */);
+
+	/**
+	* @brief Apply a peripheral tuning to a specific endpoint.
+	*
+	*/
+	void SelectPeripheral(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] long endpointIndex, /**< [in] Zero based index of the endpoint. */
+		[in] long periferalIndex /**< [in] Zero based index of the peripheral tuning. */);
+
+	/**
+	* @brief Get the applied peripheral tuning for a specific endpoint.
+	*
+	*/
+	void GetSelectedPeripheral(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] long endpointIndex, /**< [in] endpointIndex Zero based index of the endpoint. */
+		[out] long* pRetVal /**< [out] Zero based index of the peripheral tuning. */);
+
+	//
+	// IDAXAdvanced_Spatial Interface
+	//
+	/**
+	* @brief Check whether the current OS supports spatial sound.
+	*
+	*/
+	void IsSpatialAudioSupported(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] VARIANT_BOOL* pRetVal /**< [out] ture if the OS supports spatial sound. */);
+
+	/**
+	* @brief Get the status value of spatial sound in Windows 10 RS2. The status value is bitwise flag and can be combined by OR operator.
+	* @verbatim
+	* 0x00000000: None,
+	* 0x00000001: Microsoft Sonic for Headphone,
+	* 0x00000002: Dolby Atmos for Headphone,
+	* 0x00000004: Virtual Surround Sound
+	* @endverbatim
+	*
+	*/
+	void GetSpatialAudioStatus(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] long* pRetVal /**< [out] The status of spatial sound. */);
+
+	//
+	// IDAXEvent Interface
+	//
+
+	/**
+	* @brief DAX enablement state callback.
+	*
+	*/
+	[callback] void OnDolbyEnableChanged(
+		[in] VARIANT_BOOL newValue, /**< [in] Indicates if DAX is enabled. */
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+	/**
+	* @brief Active profile change callback
+	*
+	@verbatim
+	0 = Movie profile.
+	1 = Music profile.
+	2 = Game profile.
+	3 = Voice profile.
+	4 = Personalize profile.
+	5 = Intelligent profile.
+	@endverbatim
+	*
+	*/
+	[callback] void OnActiveProfileChanged(
+		[in] long newValue, /**< [in] New profile value 0 to 5. */
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+	/**
+	* @brief Surround Virtualizer enablement state callback
+	*
+	*/
+	[callback] void OnSurroundVirtualizerEnableChanged(
+		[in] long newValue, /**< [in] New status, 1 for enable, 0 for disable.*/
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+	/**
+	* @brief Dialog Enhancer enablement state callback
+	*
+	*/
+	[callback] void OnDialogEnhancerEnableChanged(
+		[in] long newValue, /**< [in] New status, 1 for enable, 0 for disable.*/
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+	/**
+	* @brief Volume Leveler enablement state callback.
+	*
+	*/
+	[callback] void OnVolumeLevelerEnableChanged(
+		[in] long newValue, /**< [in] New status, 1 for enable, 0 for disable.*/
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+	/**
+	* @brief Bass Enhancer enablement state callback.
+	*
+	*/
+	[callback] void OnBassEnhancerEnableChanged(
+		[in] long newValue, /**< [in] New status, 1 for enable, 0 for disable.*/
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+	/**
+	* @brief GEQ state callback.
+	*
+	*/
+	[callback] void OnGEQLevelsChanged(
+		[in] SAFEARRAY(long) newValue, /**< [in] New GEQ levels.*/
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+	/**
+	* @brief Default endpoint state callback.
+	*
+	* This routine will only be called with the new default endpoint.
+	*
+	* endpointIndex: -1 indicates that there is no default endpoint. Other values are indexes of the new default endpoint.
+	*/
+	[callback] void OnDefaultEndpointChanged(
+		[in] long newValue, /**< [in] The new default endpoint index.*/
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+	/**
+	* @brief Device mode state callback.
+	*
+	*/
+	[callback] void OnDeviceModeChanged(
+		[in] long newValue, /**< [in] New mode index.*/
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+	/**
+	* @brief API status change callback.
+	*
+	* The status value is bitwise flag and can be combined by OR operator.
+	* @verbatim
+	* 0x00000000: Normal,
+	* 0x00000001: Locked by Demo,
+	* 0x00000002: Locked by DTT,
+	* 0x00000004: Tuning file not exist
+	* @endverbatim
+	*
+	*/
+	[callback] void OnAPIStatusChanged(
+		[in] long newValue, /**< [in] New Status value.*/
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+
+	//
+	// IDAXEvent_Spatial Interface
+	//
+
+	/**
+	* @brief Status change callback of Spatial Sound Effect in Windows 10 RS2. The status value is bitwise flag and can be combined by OR operator.
+	* @verbatim
+	* 0x00000000: None,
+	* 0x00000001: Microsoft Sonic for Headphone,
+	* 0x00000002: Dolby Atmos for Headphone,
+	* 0x00000004: Virtual Surround Sound
+	* @endverbatim
+	*
+	* @return The status of Spatial Sound Effect.
+	*/
+	[callback] void OnSpatialAudioStatusChanged(
+		[in] long newValue, /**< [in] New Status value.*/
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+
+	//
+	// IDAXManager2 Interface
+	//
+	/**
+	* @brief The default UI theme config for certain operator and SKU
+	*
+	*/
+	void GetDefaultUITheme(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] BSTR* pRetVal /**< [out] Readable name of UI theme ("red", "green" and "blue" etc.). */);
+
+	/**
+	* @brief The SKU of the DAX3 product installed on this device
+	*
+	*/
+	void GetSKU(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] BSTR* pRetVal /**< [out] Readable name of SKU ("Gaming" and "Mainstream" etc.). */);
+
+	/**
+	* @brief Get the sub profile under current main profile
+	*
+	* For Gaming and Personalize SKU
+	*     0 = Shooter, 1 = Racing, 2 = RTS, 3 = RPG, 4 = User1, 5 = User2, 6 = User3
+	*
+	* @n For profiles that don't have sub profile, it will always be 0 as sub profile index.
+	*/
+	void GetActiveSubProfile(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] long* pRetVal /**< [out] sub profile index. */);
+
+	/**
+	* @brief Set the sub profile under current main profile
+	*
+	* For Gaming and Personalize SKU
+	*     0 = Shooter, 1 = Racing, 2 = RTS, 3 = RPG, 4 = User1, 5 = User2, 6 = User3
+	*
+	* @n For profiles that don't have sub profile, an exception will be raised.
+	*/
+	void SetActiveSubProfile(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] long pRetVal  /**< [in] sub profile index. */);
+
+	/**
+	* @brief The settings in sub profile are dirty or not.
+	*
+	* @n This value represent the settings in current sub profile is not default.
+	*/
+	void GetSubProfileDirty(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] VARIANT_BOOL* pRetVal /**< [out] sub profile */);
+
+	/**
+	* @brief Reset all settings under the current profile and the current sub profile.
+	*
+	*/
+	void ResetSubProfile(
+		[in] PCONTEXT_HANDLE_TYPE phContext /**< [in] RPC context handle. */);
+
+	/**
+	* @brief The IEQ value
+	*
+	* There are 4 valid IEQ value
+	*     0 = Off, 1 = Detailed, 2 = Balanced, 3 = Warm.
+	*
+	* @n This value represents the IEQ settings under the current profile and the current sub profile.
+	*/
+	void GetIEQ(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] long* pRetVal /**< [out] IEQ value*/);
+
+	/**
+	* @brief The IEQ value
+	*
+	* There are 4 valid IEQ value
+	*     0 = Off, 1 = Detailed, 2 = Balanced, 3 = Warm.
+	*
+	* @n This value represents the IEQ settings under the current profile and the current sub profile.
+	*/
+	void SetIEQ(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] long pRetVal /**< [in] IEQ value*/);
+
+	/**
+	* @brief Reset IEQ under the current profile and the current sub profile.
+	*
+	*/
+	void ResetIEQ(
+		[in] PCONTEXT_HANDLE_TYPE phContext /**< [in] RPC context handle. */);
+
+	/**
+	* @brief Get the Surround Virtualizer value.
+	*
+	* Range: min = 0.0, max = 1.0
+	*/
+	void GetSurroundVirtualizerValue(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] float* pRetVal /**< [out] Surround Virtualizer value */);
+
+	/**
+	* @brief Set the Surround Virtualizer value.
+	*
+	* Range: min = 0.0, max = 1.0
+	* @n This feature is not allowed to be changed while DolbyEnable is false.
+	*/
+	void SetSurroundVirtualizerValue(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] float pRetVal /**< [in] Surround Virtualizer value */);
+
+	/**
+	* @brief Get the Dialog Enhancer value.
+	*
+	* Range: min = 0.0, max = 1.0
+	* @n This feature is not allowed to be changed while DolbyEnable is false.
+	*/
+	void GetDialogEnhancerValue(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] float* pRetVal /**< [out] Dialog Enhancer value. */);
+
+	/**
+	* @brief Set the Dialog Enhancer value.
+	*
+	* Range: min = 0.0, max = 1.0
+	* @n This feature is not allowed to be changed while DolbyEnable is false.
+	*/
+	void SetDialogEnhancerValue(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] float pRetVal /**< [in] Dialog Enhancer value. */);
+
+	/**
+	* @brief Get the Volume Leveler value.
+	*
+	* Range: min = 0.0, max = 1.0
+	* @n This feature is not allowed to be changed while DolbyEnable is false.
+	*/
+	void GetVolumeLevelerValue(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] float* pRetVal /**< [out] Volume Leveler value. */);
+
+	/**
+	* @brief Set the Volume Leveler value.
+	*
+	* Range: min = 0.0, max = 1.0
+	* @n This feature is not allowed to be changed while DolbyEnable is false.
+	*/
+	void SetVolumeLevelerValue(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] float pRetVal /**< [in] Volume Leveler value. */);
+
+	/**
+	* @brief Get the Sound Radar enablement status.
+	*/
+	void GetRadarEnable(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] VARIANT_BOOL* pRetVal /**< [out] Sound Radar enablement status. */);
+
+	/**
+	* @brief Set the Sound Radar enablement status.
+	*/
+	void SetRadarEnable(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] VARIANT_BOOL pRetVal /**< [in] Sound Radar enablement status. */);
+
+	/**
+	* @brief Get the visualizer output enablement status.
+	*/
+	void GetVisualizerEnable(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] VARIANT_BOOL* pRetVal /**< [out] visualizer output enablement status. */);
+
+	/**
+	* @brief Set the visualizer output enablement status.
+	*/
+	void SetVisualizerEnable(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] VARIANT_BOOL pRetVal /**< [in] visualizer output enablement status. */);
+
+	//
+	// IDAXGame Interface
+	//
+	/**
+	* @brief Get hot keys for specific features.
+	*
+	* The valid index value:
+	*     0 = IEQ
+	*     1 = Surround Virtualizer
+	*     2 = Dialog Enhancer
+	*     3 = Volume Leveler
+	*     4 = Sound Radar Enable
+	*
+	*/
+	void GetHotkey(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] long index, /**< [in] hot key index. */
+		[out] BSTR* pRetVal /**< [out] hot keys in string format. */);
+
+	/**
+	* @brief Get hot keys for specific features
+	*
+	* The valid index value:
+	*     0 = IEQ
+	*     1 = Surround Virtualizer
+	*     2 = Dialog Enhancer
+	*     3 = Volume Leveler
+	*     4 = Sound Radar Enable
+	*
+	* If the hot key is a combination of keys, use "+" to connect each key string. For example:
+	*     "ctrl+alt+k" = press Ctrl key, Alt key and K.
+	*     "ctrl+shift+space" = press Ctrl key, Shift key and the space key.
+	*     "ctrl+alt+plus" = press Ctrl key, Alt key and the "+" key.
+	*
+	* Example of key string:
+	*     "space" = Space key
+	*     "enter" = Enter key
+	*     "plus" = + key
+	*     "home" = Home key
+	*
+	*/
+	void SetHotkey(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] long index, /**< [in] hot key index. */
+		[in] BSTR hotkey,  /**< [in] hot keys in string format. */
+		[out] long* pRetVal /**< [out] If this call replaces any other feature's hot key, the index of that feature, otherwise -1. */);
+
+	/**
+	* @brief Get the radar size.
+	*
+	* Valid range: min size = 0.0, max size = 1.0
+	*/
+	void GetRadarSize(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] float* pRetVal /**< [out] radar size. */);
+
+	/**
+	* @brief Set the radar size.
+	*
+	* Valid range: min size = 0.0, max size = 1.0
+	*/
+	void SetRadarSize(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] float pRetVal /**< [in] radar size. */);
+
+	/**
+	* @brief Get the radar transparency.
+	*
+	* Valid range: opaque = 0.0, transparent = 1.0
+	*/
+	void GetRadarTransparency(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] float* pRetVal /**< [out] radar transparency. */);
+
+	/**
+	* @brief Set the radar transparency.
+	*
+	* Valid range: opaque = 0.0, transparent = 1.0
+	*/
+	void SetRadarTransparency(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] float pRetVal /**< [in] radar transparency. */);
+
+	/**
+	* @brief Get the radar skin.
+	*
+	* Valid range: min = 0, max = 3
+	* 0 = red
+	* 1 = blue
+	* 2 = green
+	* 3 = orange
+	*/
+	void GetRadarSkin(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] unsigned long* pRetVal /**< [out] radar skin. */);
+
+	/**
+	* @brief Set the radar skin.
+	*
+	* Valid range: min = 0, max = 3
+	* 0 = red
+	* 1 = blue
+	* 2 = green
+	* 3 = orange
+	*/
+	void SetRadarSkin(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] unsigned long pRetVal /**< [in] radar skin. */);
+
+	/**
+	* @brief Get the radar Maximum Direction.
+	*
+	* Valid range: min = 1, max = 24
+	*/
+	void GetRadarMaxDirection(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] unsigned long* pRetVal /**< [out] radar MaxDirection. */);
+
+	/**
+	* @brief Set the radar Maximum Direction.
+	*
+	* Valid range: min = 1, max = 24
+	*/
+	void SetRadarMaxDirection(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] unsigned long pRetVal /**< [in] radar MaxDirection. */);
+
+	/**
+	* @brief Get the radar position.
+	*
+	* Valid range: x: 0 is leftmost, 1 is rightmost.
+	*              y: 0 is bottommost, 1 is topmost.
+	*/
+	void GetRadarPosition(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] float* x, /**< [out] radar's X position. */
+		[out] float* y /**< [out] radar's Y position. */);
+
+	/**
+	* @brief Set the radar position.
+	*
+	* Valid range: x: 0 is leftmost, 1 is rightmost.
+	*              y: 0 is bottommost, 1 is topmost.
+	*/
+	void SetRadarPosition(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] float x, /**< [in] radar's X position. */
+		[in] float y /**< [in] radar's Y position. */);
+
+	/**
+	* @brief Set the refresh rate of radar.
+	*
+	* Valid range: min = 2, max = 100
+	*/
+	void SetRadarRefreshRate(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] unsigned long pRetVal /**< [in] refresh rate of radar. */);
+
+	/**
+	* @brief Get the refresh rate of radar.
+	*
+	* Valid range: min = 2, max = 100
+	*/
+	void GetRadarRefreshRate(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] unsigned long* pRetVal /**< [out] refresh rate of radar. */);
+
+	/**
+	* @brief Gets the sound map for the azimuthal plane.
+	*
+	* The sound map is defined as a set of strength values specified on a number
+	* of sectors which fully span the azimuthal plane.
+	*
+	* The N adjoining sectors are defined by N edge angles. Angles are in units of
+	* degress in the range [-180,+180) where 0 degrees corresponds to the position
+	* directly in front of the listener.
+	*
+	* Only one sector angle format for the sound map is currently supported:
+	*
+	*   - 24 x 15-degree sectors with edges:
+	*     {-172.5,-157.5,-142.5,...,-7.5,+7.5,...,+157.5,+172.5}
+	*
+	* The strength values are representative of signal power on a logarithmic
+	* scale. The strength values are as numbers in the range [0.0, 1.0).
+	*
+	* The raw power range that is mapped into the strength numbers is controlled
+	* by the noise floor and sensitivity boost parameters. This raw power range is
+	*   [noise_floor + sensitivity_boost, 0dB]
+	*
+	* Valid range: sectEdges: An array of 24 increasing values defining the edges
+	*                         of 24 adjoining sectors spanning the azimuthal plane.
+	*              strengths: An array of 24 values corresponding to the
+	*                         sectors defined by sectEdges. The sector edges for a
+	*                         given strength value are obtained as follows:
+	*                           strength[i] : (edge[  i], edge[i+1])   N-1 >= i > 0
+	*                           strength[i] : (edge[N-1], edge[  0])          i = N-1
+	*/
+	void GetSoundMap(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] SAFEARRAY(long)* sectEdges, /**< [out] sectors are defined by N edge angles */
+		[out] SAFEARRAY(long)* strengths /**< [out] strength values */);
+
+	/**
+	* @brief Set the refresh rate of visualizer.
+	*
+	* Valid range: min = 2, max = 100
+	*/
+	void SetVisualizerRefreshRate(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[in] unsigned long pRetVal /**< [in] refresh rate of visualizer */);
+
+	/**
+	* @brief Get the refresh rate of visualizer.
+	*
+	* Valid range: min = 2, max = 100
+	*/
+	void GetVisualizerRefreshRate(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] unsigned long* pRetVal /**< [out] refresh rate of visualizer */);
+
+	/**
+	* @brief Get the visualizer data.
+	*/
+	void GetVisualizerData(
+		[in] PCONTEXT_HANDLE_TYPE phContext, /**< [in] RPC context handle. */
+		[out] SAFEARRAY(long)* pRetVal /**< [out] visualizer data. */);
+
+	//
+	// IDAXEvent_Manager2 Interface
+	//
+	/**
+	* @brief The sub profile status changed callback
+	*
+	* For Gaming SKU, there are 4 sub profile under Game profile tab.
+	*     0 = Shooter, 1 = Racing, 2 = RTS, 3 = RPG.
+	*
+	* @n For profiles that don't have sub profile, it will be 0 as sub profile index.
+	*/
+	[callback] void OnActiveSubProfileChanged(
+		[in] long newValue, /**< [in] New Sub profile value.*/
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+	/**
+	* @brief The sub profile data reset callback
+	*
+	* Clients need to refresh the data of the active sub profile
+	*/
+	[callback] void OnSubProfileReset(
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+	/**
+	* @brief The IEQ value change callback
+	*
+	* There are 4 valid IEQ value
+	*     0 = Off, 1 = Detailed, 2 = Balanced, 3 = Warm
+	*
+	* @n This value represents the IEQ settings under current profile and current sub profile.
+	*/
+	[callback] void OnIEQChanged(
+		[in] long newValue, /**< [in] New selected IEQ value.*/
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+	/**
+	* @brief The Surround Virtualizer value change callback.
+	*
+	* Range: min = 0.0, max = 1.0
+	*/
+	[callback] void OnSurroundVirtualizerValueChanged(
+		[in] float newValue, /**< [in] New Surround Virtualizer value.*/
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+	/**
+	* @brief The Dialog Enhancer value change callback.
+	*
+	* Range: min = 0.0, max = 1.0
+	*/
+	[callback] void OnDialogEnhancerValueChanged(
+		[in] float newValue, /**< [in] New Dialog Enhancer value.*/
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+	/**
+	* @brief The Volume Leveler value change callback.
+	*
+	* Range: min = 0.0, max = 1.0
+	*/
+	[callback] void OnVolumeLevelerValueChanged(
+		[in] float newValue, /**< [in] New Volume Leveler value.*/
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+	/**
+	* @brief The Sound Radar enable status change callback.
+	*
+	*/
+	[callback] void OnRadarEnableChanged(
+		[in] VARIANT_BOOL newValue, /**< [in] New Radar enable status.*/
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+	/**
+	* @brief The Sound Radar enable status change callback.
+	*
+	*/
+	[callback] void OnSubProfileDirtyChanged(
+		[in] VARIANT_BOOL newValue, /**< [in] New sub profile dirty status.*/
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+	//
+	// IDAXEvent_Game Interface
+	//
+	/**
+	* @brief The hot key setting change callback.
+	*
+	* The valid index value:
+	*     0 = IEQ
+	*     1 = Surround Virtualizer
+	*     2 = Dialog Enhancer
+	*     3 = Volume Leveler
+	*     4 = Sound Radar Enable
+	*
+	* If the hot key is a combination of keys, use "+" to connect each key string. For example:
+	*     "ctrl+alt+k" = press Ctrl key, Alt key and K.
+	*     "ctrl+shift+space" = press Ctrl key, Shift key and the space key.
+	*     "ctrl+alt+plus" = press Ctrl key, Alt key and the "+" key.
+	*
+	* Example of key string:
+	*     "space" = Space key
+	*     "enter" = Enter key
+	*     "plus" = + key
+	*     "home" = Home key
+	*/
+	[callback] void OnHotkeyChanged(
+		[in] long newValue, /**< [in] The index of features that support hotkeys */
+		[in] BSTR hotkey, /**< [in] New hotkey in string format */
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+	/**
+	* @brief The Sound Radar enablement status change callback.
+	*
+	*/
+	[callback] void OnRadarSizeChanged(
+		[in] float newValue, /**< [in] New Radar enable status.*/
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+	/**
+	* @brief The radar size change callback.
+	*
+	* Valid range: min size = 0.0, max size = 1.0
+	*/
+	[callback] void OnRadarTransparencyChanged(
+		[in] float newValue, /**< [in] New radar size value.*/
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+	/**
+	* @brief The radar position change callback.
+	*
+	* Valid range: x: 0 is leftmost, 1 is rightmost.
+	*              y: 0 is bottommost, 1 is topmost.
+	*/
+	[callback] void OnRadarPositionChanged(
+		[in] float x, /**< [in] New radar X position.*/
+		[in] float y, /**< [in] New radar Y position.*/
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+	/**
+	* @brief The Radar Skin change callback.
+	*
+	*/
+	[callback] void OnRadarSkinChanged(
+		[in] unsigned long newValue, /**< [in] New Radar Skin.*/
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+	/**
+	* @brief The Radar Maximum Direction change callback.
+	*
+	*/
+	[callback] void OnRadarMaxDirectionChanged(
+		[in] unsigned long newValue, /**< [in] New Radar Maximum Direction.*/
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+	/**
+	* @brief The Visualizer enablement status change callback.
+	*
+	*/
+	[callback] void OnVisualizerEnableChanged(
+		[in] VARIANT_BOOL newValue, /**< [in] New Visualizer enable status.*/
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+	/**
+	* @brief The Visualizer Refresh Rate change callback.
+	*
+	*/
+	[callback] void OnVisualizerRefreshRateChanged(
+		[in] unsigned long newValue, /**< [in] New Visualizer refresh rate.*/
+		[in, optional] __int64 context /**< [in, optional] The context we need passed from WaitForEventCallback function. */);
+
+}
