@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31515.178
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CppTest", "CppTest\CppTest.vcxproj", "{96C971AB-418F-477D-A253-8C80D91F2D18}"
 EndProject
@@ -23,10 +23,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "KMDF Driver2", "KMDF Driver
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gtest", "gtest\gtest.vcxproj", "{B1CA4596-3B3C-4ECF-BDFD-26358BDB052E}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libsocket", "libsocket\libsocket.vcxproj", "{BBF03BE6-A8E6-41BB-A8CA-F7888C57DF5C}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hotkey", "hotkey\hotkey.vcxproj", "{D2141FDA-7D4A-4534-BF85-760AF7101DA2}"
+EndProject
 Global
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM = Debug|ARM
 		Debug|ARM64 = Debug|ARM64
@@ -170,8 +171,38 @@ Global
 		{B1CA4596-3B3C-4ECF-BDFD-26358BDB052E}.Release|x64.Build.0 = Release|x64
 		{B1CA4596-3B3C-4ECF-BDFD-26358BDB052E}.Release|x86.ActiveCfg = Release|Win32
 		{B1CA4596-3B3C-4ECF-BDFD-26358BDB052E}.Release|x86.Build.0 = Release|Win32
+		{BBF03BE6-A8E6-41BB-A8CA-F7888C57DF5C}.Debug|ARM.ActiveCfg = Debug|Win32
+		{BBF03BE6-A8E6-41BB-A8CA-F7888C57DF5C}.Debug|ARM64.ActiveCfg = Debug|Win32
+		{BBF03BE6-A8E6-41BB-A8CA-F7888C57DF5C}.Debug|x64.ActiveCfg = Debug|x64
+		{BBF03BE6-A8E6-41BB-A8CA-F7888C57DF5C}.Debug|x64.Build.0 = Debug|x64
+		{BBF03BE6-A8E6-41BB-A8CA-F7888C57DF5C}.Debug|x86.ActiveCfg = Debug|Win32
+		{BBF03BE6-A8E6-41BB-A8CA-F7888C57DF5C}.Debug|x86.Build.0 = Debug|Win32
+		{BBF03BE6-A8E6-41BB-A8CA-F7888C57DF5C}.Release|ARM.ActiveCfg = Release|Win32
+		{BBF03BE6-A8E6-41BB-A8CA-F7888C57DF5C}.Release|ARM64.ActiveCfg = Release|Win32
+		{BBF03BE6-A8E6-41BB-A8CA-F7888C57DF5C}.Release|x64.ActiveCfg = Release|x64
+		{BBF03BE6-A8E6-41BB-A8CA-F7888C57DF5C}.Release|x64.Build.0 = Release|x64
+		{BBF03BE6-A8E6-41BB-A8CA-F7888C57DF5C}.Release|x86.ActiveCfg = Release|Win32
+		{BBF03BE6-A8E6-41BB-A8CA-F7888C57DF5C}.Release|x86.Build.0 = Release|Win32
+		{D2141FDA-7D4A-4534-BF85-760AF7101DA2}.Debug|ARM.ActiveCfg = Debug|Win32
+		{D2141FDA-7D4A-4534-BF85-760AF7101DA2}.Debug|ARM64.ActiveCfg = Debug|Win32
+		{D2141FDA-7D4A-4534-BF85-760AF7101DA2}.Debug|x64.ActiveCfg = Debug|x64
+		{D2141FDA-7D4A-4534-BF85-760AF7101DA2}.Debug|x64.Build.0 = Debug|x64
+		{D2141FDA-7D4A-4534-BF85-760AF7101DA2}.Debug|x86.ActiveCfg = Debug|Win32
+		{D2141FDA-7D4A-4534-BF85-760AF7101DA2}.Debug|x86.Build.0 = Debug|Win32
+		{D2141FDA-7D4A-4534-BF85-760AF7101DA2}.Release|ARM.ActiveCfg = Release|Win32
+		{D2141FDA-7D4A-4534-BF85-760AF7101DA2}.Release|ARM64.ActiveCfg = Release|Win32
+		{D2141FDA-7D4A-4534-BF85-760AF7101DA2}.Release|x64.ActiveCfg = Release|x64
+		{D2141FDA-7D4A-4534-BF85-760AF7101DA2}.Release|x64.Build.0 = Release|x64
+		{D2141FDA-7D4A-4534-BF85-760AF7101DA2}.Release|x86.ActiveCfg = Release|Win32
+		{D2141FDA-7D4A-4534-BF85-760AF7101DA2}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {ADFDE3FF-B104-4038-9642-D2E49C1DD338}
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
 	EndGlobalSection
 EndGlobal

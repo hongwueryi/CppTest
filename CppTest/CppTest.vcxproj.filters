@@ -5,6 +5,7 @@
     <ClCompile Include="ExceptionReport.cpp" />
     <ClCompile Include="ThreadPool.cpp" />
     <ClCompile Include="MyQueue.cpp" />
+    <ClCompile Include="test2.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="method.h" />

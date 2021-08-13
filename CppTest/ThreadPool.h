@@ -1,5 +1,6 @@
 #pragma once
 #include <deque>
+#include <functional>
 typedef std::function<void()> TASK_FUNC;
 
 class CThreadPool

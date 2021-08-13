@@ -122,7 +122,7 @@ void threadProc(TestQueue::MyQueue<int>& test, int type)
 	}
 }
 
-int main()
+int main_test()
 {
 #if 0
 	TestQueue::MyQueue<int> test(2);
