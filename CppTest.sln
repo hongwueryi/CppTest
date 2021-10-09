@@ -27,6 +27,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libsocket", "libsocket\libs
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hotkey", "hotkey\hotkey.vcxproj", "{D2141FDA-7D4A-4534-BF85-760AF7101DA2}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "D3DTest", "D3DTest\D3DTest.vcxproj", "{6F4662B4-EF96-4677-9FE8-32A2644024C4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM = Debug|ARM
@@ -195,6 +197,18 @@ Global
 		{D2141FDA-7D4A-4534-BF85-760AF7101DA2}.Release|x64.Build.0 = Release|x64
 		{D2141FDA-7D4A-4534-BF85-760AF7101DA2}.Release|x86.ActiveCfg = Release|Win32
 		{D2141FDA-7D4A-4534-BF85-760AF7101DA2}.Release|x86.Build.0 = Release|Win32
+		{6F4662B4-EF96-4677-9FE8-32A2644024C4}.Debug|ARM.ActiveCfg = Debug|Win32
+		{6F4662B4-EF96-4677-9FE8-32A2644024C4}.Debug|ARM64.ActiveCfg = Debug|Win32
+		{6F4662B4-EF96-4677-9FE8-32A2644024C4}.Debug|x64.ActiveCfg = Debug|x64
+		{6F4662B4-EF96-4677-9FE8-32A2644024C4}.Debug|x64.Build.0 = Debug|x64
+		{6F4662B4-EF96-4677-9FE8-32A2644024C4}.Debug|x86.ActiveCfg = Debug|Win32
+		{6F4662B4-EF96-4677-9FE8-32A2644024C4}.Debug|x86.Build.0 = Debug|Win32
+		{6F4662B4-EF96-4677-9FE8-32A2644024C4}.Release|ARM.ActiveCfg = Release|Win32
+		{6F4662B4-EF96-4677-9FE8-32A2644024C4}.Release|ARM64.ActiveCfg = Release|Win32
+		{6F4662B4-EF96-4677-9FE8-32A2644024C4}.Release|x64.ActiveCfg = Release|x64
+		{6F4662B4-EF96-4677-9FE8-32A2644024C4}.Release|x64.Build.0 = Release|x64
+		{6F4662B4-EF96-4677-9FE8-32A2644024C4}.Release|x86.ActiveCfg = Release|Win32
+		{6F4662B4-EF96-4677-9FE8-32A2644024C4}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

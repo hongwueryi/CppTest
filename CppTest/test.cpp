@@ -11,6 +11,7 @@
 #include <thread>
 #include <Windows.h>
 #include "ExceptionReport.h"
+#include "method.h"
 
 CExceptionReport report;
 using namespace std;
@@ -2134,8 +2135,9 @@ void doit(void* arg)
 	}
 }
 
-int mainTT()
+int main11()
 {
+	GetDeviceInfo();
 	//std::mem_fn(&std::thread::join);
 #if 0
 #define _CRTDBG_MAP_ALLOC
