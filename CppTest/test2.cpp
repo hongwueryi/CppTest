@@ -3,17 +3,25 @@
 #include <thread>
 #include <string>
 #include <map>
+#include "ExceptionReport.h"
+#include <vector>
+#include <string>
+#include <tchar.h>
+#include "udpprxoy.h"
 using namespace std;
 
+CExceptionReport report1;
 void Socket_udp_test()
 {
 	std::thread tUdp_s([] {
 		DtenUdp::GetInstance()->Run();
 		});
 
+#if 1
 	std::thread tUdp_c([] {
-		DtenUdp::GetInstance()->SendTOServer();
+		//DtenUdp::GetInstance()->SendTOServer();
 		});
+#endif
 	tUdp_c.detach();
 	tUdp_s.detach();
 }
@@ -38,9 +46,213 @@ UINT WINAPI threadproct(LPVOID param)
 	return 0;
 }
 
+class ptrTest
+{
+public:
+	ptrTest(int* test1);
+	~ptrTest();
+	void test()
+	{
+		int* test2 = test_;
+		*test2 = 100;
+	}
+	void print()
+	{
+		printf("%d\n", *test_);
+	}
+private:
+	int* test_;
+};
+
+ptrTest::ptrTest(int* test1)
+{
+	test_ = test1;
+}
+
+ptrTest::~ptrTest()
+{
+}
+
+
+std::vector<std::string> util_strsplit(const std::string& str, const char c)
+{
+    std::vector<std::string> v;
+
+    // Skip delimiters at beginning.
+    std::string::size_type lastPos = str.find_first_not_of(c, 0);
+    // Find first "non-delimiter".
+    std::string::size_type pos = str.find_first_of(c, lastPos);
+
+    while (std::string::npos != pos || std::string::npos != lastPos)
+    {
+        // Found a token, add it to the vector.
+        v.push_back(str.substr(lastPos, pos - lastPos));
+        // Skip delimiters.  Note the "not_of"
+        lastPos = str.find_first_not_of(c, pos);
+        // Find next "non-delimiter"
+        pos = str.find_first_of(c, lastPos);
+    }
+
+    return v;
+
+}
+
 #include <filesystem>
+void FileTimeToTime_t(const FILETIME* ft, time_t* t)
+{
+    ULARGE_INTEGER ui;
+    ui.LowPart = ft->dwLowDateTime;
+    ui.HighPart = ft->dwHighDateTime;
+    *t = (DWORD)((LONGLONG)(ui.QuadPart - 116444736000000000) / 10000000);
+}
+
+void Time_tToTm(time_t t, tm* _t)
+{
+    tm tt;
+    localtime_s(&tt, &t);
+    memcpy(_t, &tt, sizeof(tm));
+}
+
+void FileTimeToTm(const FILETIME* ft, tm* t)
+{
+    time_t tm;
+    FileTimeToTime_t(ft, &tm);
+
+	Time_tToTm(tm, t);
+}
+
+#include "usb.h"
+#define STR_CAMERAL_HARDID_REGEX _T("USB\\\\VID_174F&PID_2440&REV_.{4}&MI_00")
+#define STR_BUZ_HARDID_REGEX			_T("USB\\\\VID_10C4&PID_EA60&REV_.{4}")
+#define STR_SPEAKER_HARDID_REGEX        _T("USB\\\\VID_1D6B&PID_0105&REV_.{4}&MI_00")
+
+#define SPEAKER_PCIE	L"DTEN Board"
+
+DWORD WINAPI  RunOrbitCmdThread(LPVOID lpParam)
+{
+    std::string strCmd = (char*)lpParam;
+    printf("RunOrbitCmdThread strCmd:%s", strCmd.c_str());
+    int nRet = system(strCmd.c_str());
+    return nRet;
+}
+
+
+void callback_parse_udp_data(void* pData, unsigned int uDataLen)
+{
+	if (nullptr == pData)
+		return;
+	printf("%s\n", pData);
+}
+
 int main()
 {
+#if 0
+	DWORD dwThreadId;
+	string strCmd = "reg add \"HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\DTEN\" /f /v \"disable_hdmi_auto\" /t REG_DWORD /d \"1\"";
+	HANDLE m_hThread = CreateThread(NULL, 0, RunOrbitCmdThread, (char*)strCmd.c_str(), 0, &dwThreadId);
+#endif
+#if 0
+	std::wstring strDevDes = L"DTEN Board (Intel(R) Display Audio)";
+    if (strDevDes.find(SPEAKER_PCIE) != std::wstring::npos)
+    {
+        int nRet = 1;
+    }
+	GetDrvStatusByName(SPEAKER_PCIE);
+#endif
+    //USB\VID_174F&PID_2440&REV_0014&MI_00
+    //TCHAR* arrSpeakerHard[2] = { NULL, STR_CAMERAL_HARDID_REGEX };
+#if 0
+	printf("USB\\\\VID_1D6B&PID_0105&REV_.{4}&MI_00\n");
+	TCHAR* arrSpeakerHard[2] = { NULL, STR_SPEAKER_HARDID_REGEX };
+    dwGetCurDrvInfo(NULL, _T("USB"), arrSpeakerHard, 2, NULL);
+	printf("\n---------------------\n");
+	printf("USB\\\\VID_10C4&PID_EA60&REV_.{4}\n");
+    TCHAR* arrSpeakerHard2[2] = { NULL, STR_BUZ_HARDID_REGEX };
+    dwGetCurDrvInfo(NULL, _T("USB"), arrSpeakerHard2, 2, NULL);
+#endif
+#if 0
+    HANDLE hFile = CreateFile(L"C:\\Windows\\MEMORY.DMP", GENERIC_READ,
+        FILE_SHARE_READ | FILE_SHARE_DELETE,
+        NULL, OPEN_EXISTING,
+        FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    FILETIME lpCreationTime;
+    FILETIME lpLastAccessTime;
+    FILETIME lpLastWriteTime; 
+	if (GetFileTime(hFile, &lpCreationTime, &lpLastAccessTime, &lpLastWriteTime))
+	{
+		time_t tt;
+		tm tm_;
+		SYSTEMTIME syst;
+		FileTimeToTime_t(&lpCreationTime, &tt);
+		FileTimeToTm(&lpCreationTime, &tm_);
+		FileTimeToSystemTime(&lpCreationTime, &syst);
+        chrono::system_clock::time_point now = chrono::system_clock::now();//当前时间time_point格式
+        std::time_t nowTime_t = chrono::system_clock::to_time_t(now);//转换为 std::time_t 格式 
+		LONGLONG duration = (nowTime_t - tt);
+		LONGLONG duration1 = duration / 60 / 60 / 12;
+		int num = 0;
+	}
+
+	chrono::system_clock::time_point now = chrono::system_clock::now();//当前时间time_point格式
+	std::time_t nowTime_t = chrono::system_clock::to_time_t(now);//转换为 std::time_t 格式 
+	std::put_time(std::localtime(&nowTime_t), "%Y-%m-%d %X"); //2021-6-24 14:44:47
+	//chrono::system_clock::from_time_t()
+#endif
+#if 0
+    std::string strTime = "19:30-23:30";
+    std::vector<std::string> strValues = util_strsplit(strTime, '-');
+    int iWaitTime = 0;
+    int iStartTime = 0;
+    int iEndTime = 0;
+    if (strValues.size() >= 2)
+    {
+        std::string strStart = strValues[0];
+        std::vector<std::string> strStartValue = util_strsplit(strStart, ':');
+        if (strStartValue.size() >= 2)
+        {
+            int iStartHour = 0;
+            int iStartMin = 0;
+            iStartHour = atoi(strStartValue[0].c_str());
+            iStartMin = atoi(strStartValue[1].c_str());
+            iStartTime = iStartHour * 60 + iStartMin;
+        }
+        std::string strEnd = strValues[1];
+        std::vector<std::string> strEndValue = util_strsplit(strEnd, ':');
+        if (strEndValue.size() >= 2)
+        {
+            int iEndHour = 0;
+            int iEndMin = 0;
+            iEndHour = atoi(strEndValue[0].c_str());
+            iEndMin = atoi(strEndValue[1].c_str());
+            iEndTime = iEndHour * 60 + iEndMin;
+        }
+	}
+    SYSTEMTIME stTime = { 0 };
+    GetLocalTime(&stTime);
+
+    int iCurTime = stTime.wHour * 60 + stTime.wMinute;
+
+	int iWaiteTime = 0;
+    if (iCurTime < iStartTime)
+    {
+        iWaiteTime = iStartTime - iCurTime;
+}
+    else if (iCurTime >= iStartTime && iCurTime <= iEndTime)
+    {
+        iWaiteTime = 0;
+    }
+    else if (iCurTime > iEndTime)
+    {
+        iWaiteTime = 24 * 60 - iCurTime + iStartTime;
+    }
+	int num = 0;
+#endif
+#if 0
+	ptrTest* pp = new ptrTest(&a1);
+    pp->print();
+	pp->test();
+	pp->print();
+#endif
 #if 0
 	std::filesystem::path p("c:\\windows");
 	if (std::filesystem::exists(p))
@@ -141,6 +353,8 @@ int main()
 	//EnumWindowStations(WorkStationEnum, 0);
 	//EnumDesktops(NULL, DeskEnum, 0);
 	//Socket_udp_test();
-	system("pause");
+#if 1
+	CUDPCnt::GetInstance()->run(callback_parse_udp_data);
+#endif
 	return 0;
 }

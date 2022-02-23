@@ -243,6 +243,13 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
    ShowWindow(hWnd, SW_SHOW);
    UpdateWindow(hWnd);
+   SetWindowPos(hWnd,
+       HWND_TOPMOST,
+       100,
+	   100,
+       600,
+       300,
+       SWP_NOZORDER | SWP_NOACTIVATE);
 //    ShowWindow(hWnd2, SW_SHOW);
 //    UpdateWindow(hWnd2);
    

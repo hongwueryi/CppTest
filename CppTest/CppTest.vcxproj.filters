@@ -6,6 +6,7 @@
     <ClCompile Include="ThreadPool.cpp" />
     <ClCompile Include="MyQueue.cpp" />
     <ClCompile Include="test2.cpp" />
+    <ClCompile Include="usb.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="method.h" />
@@ -13,6 +14,7 @@
     <ClInclude Include="virtualkey.h" />
     <ClInclude Include="ExceptionReport.h" />
     <ClInclude Include="ThreadPool.h" />
+    <ClInclude Include="usb.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CppTest.rc" />
