@@ -29,6 +29,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hotkey", "hotkey\hotkey.vcx
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "D3DTest", "D3DTest\D3DTest.vcxproj", "{6F4662B4-EF96-4677-9FE8-32A2644024C4}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RapidXML", "RapidXML\RapidXML.vcxproj", "{9C6752D4-613D-48F0-90EB-B7F9188666FE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM = Debug|ARM
@@ -209,6 +211,18 @@ Global
 		{6F4662B4-EF96-4677-9FE8-32A2644024C4}.Release|x64.Build.0 = Release|x64
 		{6F4662B4-EF96-4677-9FE8-32A2644024C4}.Release|x86.ActiveCfg = Release|Win32
 		{6F4662B4-EF96-4677-9FE8-32A2644024C4}.Release|x86.Build.0 = Release|Win32
+		{9C6752D4-613D-48F0-90EB-B7F9188666FE}.Debug|ARM.ActiveCfg = Debug|Win32
+		{9C6752D4-613D-48F0-90EB-B7F9188666FE}.Debug|ARM64.ActiveCfg = Debug|Win32
+		{9C6752D4-613D-48F0-90EB-B7F9188666FE}.Debug|x64.ActiveCfg = Debug|x64
+		{9C6752D4-613D-48F0-90EB-B7F9188666FE}.Debug|x64.Build.0 = Debug|x64
+		{9C6752D4-613D-48F0-90EB-B7F9188666FE}.Debug|x86.ActiveCfg = Debug|Win32
+		{9C6752D4-613D-48F0-90EB-B7F9188666FE}.Debug|x86.Build.0 = Debug|Win32
+		{9C6752D4-613D-48F0-90EB-B7F9188666FE}.Release|ARM.ActiveCfg = Release|Win32
+		{9C6752D4-613D-48F0-90EB-B7F9188666FE}.Release|ARM64.ActiveCfg = Release|Win32
+		{9C6752D4-613D-48F0-90EB-B7F9188666FE}.Release|x64.ActiveCfg = Release|x64
+		{9C6752D4-613D-48F0-90EB-B7F9188666FE}.Release|x64.Build.0 = Release|x64
+		{9C6752D4-613D-48F0-90EB-B7F9188666FE}.Release|x86.ActiveCfg = Release|Win32
+		{9C6752D4-613D-48F0-90EB-B7F9188666FE}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

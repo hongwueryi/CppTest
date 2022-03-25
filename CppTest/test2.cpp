@@ -8,7 +8,80 @@
 #include <string>
 #include <tchar.h>
 #include "udpprxoy.h"
+
 using namespace std;
+
+BOOL ModifyRegMultiSZ(LPCWSTR lpKeyPath, LPCWSTR lpItem, LPCTSTR dwValue, int len)
+{
+    HKEY hKey = NULL, hSubKey = NULL;
+    DWORD dwResOpen = 0;
+    BOOL bRet = TRUE;
+
+#if 1
+    if (ERROR_SUCCESS != RegCreateKeyEx(HKEY_LOCAL_MACHINE,
+        lpKeyPath,
+        NULL,
+        NULL,
+        REG_OPTION_NON_VOLATILE,
+        KEY_ALL_ACCESS,
+        NULL,
+        &hKey,
+        0))
+    {
+        return bRet;
+    }
+
+#else
+	if (ERROR_SUCCESS != RegOpenKeyEx(HKEY_LOCAL_MACHINE, lpKeyPath, 0, KEY_ALL_ACCESS, &hKey))
+	{
+        return FALSE;
+	}
+#endif
+    if (ERROR_SUCCESS != ::RegSetValueEx(hKey, lpItem, 0, REG_MULTI_SZ, (CONST BYTE*)dwValue, len))
+    {
+        bRet = FALSE;
+    }
+
+	wstring wstr = L"";
+	DWORD dwType, dwSize;
+	vector<wstring> vec;
+    // 获取类型、长度
+    if (RegQueryValueEx(hKey, lpItem, NULL, &dwType, NULL, &dwSize) != ERROR_SUCCESS)
+    {
+        goto toerr;
+    }
+	TCHAR* pChValue = new TCHAR[dwSize + 1]{ 0 };
+    // 读取数据
+   
+    // 此函数无需调用RegOpenKeyEx，仅在VISTA及以上版本系统可用，XP系统以下系统不可用，XP系统用RegQueryValueEx
+    // _WIN32_WINNT >= 0x0600 则可用，Win10: 0x0A00。
+    //RegGetValue(HKEY_LOCAL_MACHINE, lpKeyPath, lpItem, RRF_RT_REG_MULTI_SZ, nullptr, pChValue, &dwSize);
+	if (RegQueryValueEx(hKey, lpItem, NULL, &dwType, (LPBYTE)pChValue, &dwSize) != ERROR_SUCCESS)
+	{
+		goto toerr;
+	}
+
+	for (int i = 0; i < dwSize/sizeof(wchar_t); i++)
+	{
+        if (pChValue[i] == '\0')
+        {
+			wprintf(L"%s\n", wstr.c_str());
+            vec.push_back(wstr);
+            wstr = L"";
+        }
+        else
+        {
+            wstr.append(1, pChValue[i]);
+
+        }
+	}
+	delete[] pChValue;
+ 
+toerr:
+	
+    RegCloseKey(hKey);
+    return bRet;
+}
 
 CExceptionReport report1;
 void Socket_udp_test()
@@ -353,8 +426,59 @@ int main()
 	//EnumWindowStations(WorkStationEnum, 0);
 	//EnumDesktops(NULL, DeskEnum, 0);
 	//Socket_udp_test();
-#if 1
+#if 0
 	CUDPCnt::GetInstance()->run(callback_parse_udp_data);
 #endif
+#if 0
+    string sql = "UPDATE HEALTHCHECKCATEGORY_TRACKING SET ErrorId = '%s' WHERE errorId like '%s%%'";
+    //string sql = "UPDATE HEALTHCHECKCATEGORY_TRACKING SET amount = %d WHERE ID = %d";
+    string strErrorID = "h01230";
+    char szCmd[1256];
+	string f = strErrorID.substr(0, 1);
+    sprintf_s(szCmd, sql.c_str(), strErrorID.c_str(), f.c_str());
+	printf("%s\n", szCmd);
+#endif
+#if 0
+    HKEY hk;
+	LSTATUS lRet;
+    wstring szSubKey = _T("SOFTWARE\\Microsoft\\SkypeRoomSystem");
+	//wstring szSubKey = L"SOFTWARE\\Kingsoft";
+
+    if ((lRet = ::RegOpenKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\TEST", 0, KEY_READ, &hk)) != ERROR_SUCCESS)
+    {
+		int err = GetLastError();
+        return 0;
+    }
+
+    wstring szItemName = _T("Oem Tracking");
+    TCHAR szItemValue[] = _T("Chinese\0中文\0log和日志");
+    //TCHAR szItemValue[] = _T("Chinese\r\n中文");
+    if ((lRet = ::RegSetValueEx(hk, szItemName.c_str(), 0, REG_MULTI_SZ, (BYTE*)szItemValue, sizeof(szItemValue))) != ERROR_SUCCESS)
+    {
+		int err = GetLastError();
+        RegCloseKey(hk);
+        return 0;
+    }
+    //RegFlushKey(hk);
+    RegCloseKey(hk);
+#endif
+#if 0
+    WCHAR pChValue[] = L"1,2,3,44";
+    wchar_t* token = nullptr;
+    wchar_t* nexttoken = nullptr;
+    const wchar_t* seps = L",";
+    token = wcstok_s(pChValue, seps, &nexttoken);
+    while (token != nullptr)
+    {
+        wprintf(L"%s\n", token);
+        token = wcstok_s(nullptr, seps, &nexttoken);
+    }
+#endif
+#if 1
+    WCHAR szItemValue[] = L"Chinese\0english\0中文";
+    int len = sizeof(szItemValue);
+	ModifyRegMultiSZ(L"SOFTWARE\\TEST", L"item", szItemValue, sizeof(szItemValue));
+#endif
+
 	return 0;
 }
