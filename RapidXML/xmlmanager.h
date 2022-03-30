@@ -23,6 +23,8 @@ public:
     bool GetNodeAttribute(const char* NodePName, const char* NodeCName, const char*attrName, std::wstring& value);
     bool GetNodeAttribute(const char* NodePName, const char* NodeCName, const char* NodeGName, const char* attrName, std::wstring& value);
     bool GetNodeAttribute(const char* NodePName, const char* NodeCName, const char* NodeGName, const char* NodeGSName, const char* attrName, std::wstring& value);
+
+    bool GetNodeAttribute(const char* NodePName, const char* NodeCName, const char* NodeGName, NODE_ATTRIBUTE_DEVICE& NodeInfo);
     bool GetNodeAttribute(const char* NodePName, const char* NodeCName, const char* NodeGName, const char* NodeGSName, NODE_ATTRIBUTE_DEVICE& NodeInfo);
 
     bool GetNodeAttribute(const char* NodePName, const char* NodeCName, const char* NodeGName, std::vector<NODE_ATTRIBUTE_DEVICE>& vec);

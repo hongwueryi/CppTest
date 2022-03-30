@@ -380,6 +380,52 @@ bool CXmlManager::GetNodeAttribute(const char* NodePName, const char* NodeCName,
 }
 
 bool CXmlManager::GetNodeAttribute(const char* NodePName, const char* NodeCName,
+    const char* NodeGName, NODE_ATTRIBUTE_DEVICE& NodeInfo)
+{
+    if (!Init() || nullptr == NodePName || nullptr == NodeCName)
+        return false;
+    try {
+        xml_node<>* nodeP = g_root->first_node(NodePName);
+        if (0 == nodeP)
+        {
+            return false;
+        }
+        xml_node<>* nodeC = nodeP->first_node(NodeCName);
+        if (0 == nodeC)
+        {
+            return false;
+        }
+        xml_node<>* nodeG = nodeC->first_node(NodeGName);
+        if (0 == nodeG)
+        {
+            return false;
+        }
+
+        rapidxml::xml_attribute<>* Nodeharid = nodeG->first_attribute("hardid");
+        if (0 == Nodeharid)
+        {
+            return false;
+        }
+        std::wstring hardid = Utf8ToUnicode(Nodeharid->value());
+        rapidxml::xml_attribute<>* Nodeinffile = nodeG->first_attribute("inffile");
+        if (0 == Nodeinffile)
+        {
+            return false;
+        }
+        std::wstring inffile = Utf8ToUnicode(Nodeinffile->value());
+        NodeInfo.hardid = hardid;
+        NodeInfo.inffile = inffile;
+    }
+    catch (rapidxml::parse_error e)
+    {
+        std::cout << e.what() << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+bool CXmlManager::GetNodeAttribute(const char* NodePName, const char* NodeCName,
     const char* NodeGName, std::vector<NODE_ATTRIBUTE_DEVICE>& vec)
 {
     if (!Init() || nullptr == NodePName || nullptr == NodeCName)
