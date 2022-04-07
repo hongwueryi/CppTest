@@ -39,8 +39,28 @@ bool isMatchdVidPidFromPlugEvent(const char* NodePName, const char* NodeCName,
     return false;
 }
 
+bool GetVidPidInfoFromXML(const char* nodeRoot, const char* nodeType,
+    const char* nodeName, vector<wstring>& vecNode)
+{
+    if (vecNode.empty())
+    {
+        CXmlManager::GetInstance().GetNodeValue(nodeRoot, nodeType, nodeName, vecNode);
+    }
+
+    if (vecNode.empty())
+    {
+        return false;
+    }
+
+    return true;
+}
+
 bool GetVidPidInfoFromXML(const char* nodeRoot, const char* nodeType, const char* nodeName, wchar_t** psMicIdRegex, int& nMicArrNum, vector<wstring>&vecNode)
 {
+    if (nullptr == psMicIdRegex)
+    {
+        return false;
+    }
     if (vecNode.empty())
     {
         CXmlManager::GetInstance().GetNodeValue(nodeRoot, nodeType, nodeName, vecNode);
@@ -91,7 +111,7 @@ bool GetMicHardIDAndInfFile(std::string strMicVidPid, const char* deviceType, st
     return false;
 }
 
-bool GetCamHardIDAndInfFile(std::string strMicVidPid, std::vector<wstring>& allvidpid, NODE_ATTRIBUTE_DEVICE& NodeInfo)
+bool GetCamHardIDAndInfFile(std::string strMicVidPid, const char* deviceType, std::vector<wstring>& allvidpid, NODE_ATTRIBUTE_DEVICE& NodeInfo)
 {
     if (!NodeInfo.hardid.empty() && !NodeInfo.inffile.empty())
     {
@@ -99,7 +119,7 @@ bool GetCamHardIDAndInfFile(std::string strMicVidPid, std::vector<wstring>& allv
     }
     if (allvidpid.empty())
     {
-        CXmlManager::GetInstance().GetNodeValue("SETUPDRIVERS", "CAM", "ALLVIDPID", allvidpid);
+        CXmlManager::GetInstance().GetNodeValue("SETUPDRIVERS", "CAM", deviceType, "ALLVIDPID", allvidpid);
     }
     if (allvidpid.empty())
     {
@@ -113,7 +133,38 @@ bool GetCamHardIDAndInfFile(std::string strMicVidPid, std::vector<wstring>& allv
         if (strMicVidPid.find(temp) != std::string::npos)
         {
             NODE_ATTRIBUTE_DEVICE Info;
-            CXmlManager::GetInstance().GetNodeAttribute("SETUPDRIVERS", "CAM", temp.c_str(), Info);
+            CXmlManager::GetInstance().GetNodeAttribute("SETUPDRIVERS", "CAM", deviceType, temp.c_str(), Info);
+            NodeInfo = Info;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool GetTPHardIDAndInfFile(std::string strTPVidPid, const char* deviceType, std::vector<wstring>& allvidpid, NODE_ATTRIBUTE_DEVICE& NodeInfo)
+{
+    if (!NodeInfo.hardid.empty() && !NodeInfo.inffile.empty())
+    {
+       return true;
+    }
+    if (allvidpid.empty())
+    {
+        CXmlManager::GetInstance().GetNodeValue("SETUPDRIVERS", "TOUCH", deviceType, "ALLVIDPID", allvidpid);
+    }
+    if (allvidpid.empty())
+    {
+        return false;
+    }
+
+    std::vector<wstring>::iterator itMic;
+    for (itMic = allvidpid.begin(); itMic != allvidpid.end(); ++itMic)
+    {
+        string temp = UnicodeToAscii(*itMic);
+        if (strTPVidPid.find(temp) != std::string::npos)
+        {
+            NODE_ATTRIBUTE_DEVICE Info;
+            CXmlManager::GetInstance().GetNodeAttribute("SETUPDRIVERS", "TOUCH", deviceType, temp.c_str(), Info);
             NodeInfo = Info;
             return true;
         }
@@ -142,14 +193,44 @@ void Get_Node_MIC_55()
     return;
 }
 
+void GetTPHardidandInf()
+{
+    std::string strMicPID = "USB\\VID_222A&PID_0001&REV_70.*";
+    static std::vector<wstring> allvidpid;
+    static NODE_ATTRIBUTE_DEVICE NodeInfo1;
+    if (!GetTPHardIDAndInfFile(strMicPID, "TOUCH_75", allvidpid, NodeInfo1))
+    {
+        return;
+    }
+}
+
 void GetCamHardidandInf()
 {
     std::string strMicPID = "USB\\VID_1D6B&PID_0100&REV_.*";
     static std::vector<wstring> allvidpid;
     static NODE_ATTRIBUTE_DEVICE NodeInfo1;
-    if (!GetCamHardIDAndInfFile(strMicPID, allvidpid, NodeInfo1))
+    if (!GetCamHardIDAndInfFile(strMicPID, "D7", allvidpid, NodeInfo1))
     {
         return;
+    }
+}
+
+void SetUpTouchDevconByForce()
+{
+    static std::vector<NODE_ATTRIBUTE_DEVICE> allTPinf;
+    if (allTPinf.empty())
+    {
+        CXmlManager::GetInstance().GetNodeAttribute("SETUPDRIVERS", "TOUCH", "SETUPALL", allTPinf);
+    }
+    if (allTPinf.empty())
+    {
+        return;
+    }
+    std::vector<NODE_ATTRIBUTE_DEVICE>::iterator it;
+    for (it = allTPinf.begin(); it != allTPinf.end(); ++it)
+    {
+        string strinf = UnicodeToAscii(it->inffile);
+        string strhardid = UnicodeToAscii(it->hardid);
     }
 }
 
@@ -158,7 +239,7 @@ void SetUpCamByDevconByForce()
     static std::vector<NODE_ATTRIBUTE_DEVICE> allCaminf;
     if (allCaminf.empty())
     {
-        CXmlManager::GetInstance().GetNodeAttribute("SETUPDRIVERS", "CAM", "SETUPALL", allCaminf);
+        CXmlManager::GetInstance().GetNodeAttribute("SETUPDRIVERS", "CAM", "D7", "SETUPALL", allCaminf);
     }
     if (allCaminf.empty())
     {
@@ -172,8 +253,98 @@ void SetUpCamByDevconByForce()
     }
 }
 
+bool GetBuzzerHardIDAndInfFile(std::string strVidPid, std::vector<wstring>& allvidpid, NODE_ATTRIBUTE_DEVICE& NodeInfo)
+{
+    if (!NodeInfo.hardid.empty() && !NodeInfo.inffile.empty())
+    {
+        return true;
+    }
+    if (allvidpid.empty())
+    {
+        CXmlManager::GetInstance().GetNodeValue("SETUPDRIVERS", "BUZZER", "ALLVIDPID", allvidpid);
+    }
+    if (allvidpid.empty())
+    {
+        return false;
+    }
+
+    std::vector<wstring>::iterator itMic;
+    for (itMic = allvidpid.begin(); itMic != allvidpid.end(); ++itMic)
+    {
+        string temp = UnicodeToAscii(*itMic);
+        if (strVidPid.find(temp) != std::string::npos)
+        {
+            NODE_ATTRIBUTE_DEVICE Info;
+            CXmlManager::GetInstance().GetNodeAttribute("SETUPDRIVERS", "BUZZER", temp.c_str(), Info);
+            NodeInfo = Info;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void GetBuzzerHardidandInf()
+{
+    std::string strMicPID = "USB\VID_10C4&PID_EA60&REV_0100";
+    static std::vector<wstring> allvidpid;
+    static NODE_ATTRIBUTE_DEVICE NodeInfo1;
+    if (!GetBuzzerHardIDAndInfFile(strMicPID, allvidpid, NodeInfo1))
+    {
+        return;
+    }
+}
+int GetTouchVer(char* szBuf, int nBufLen)
+{
+    char szVer[128] = { 0 };
+    bool bRet = false;
+    string strHardId = "";
+   
+    static vector<wstring> vecTouchNode1;
+    vector<wstring>::iterator it;
+    if (!GetVidPidInfoFromXML("CHECKDEVICE", "TOUCH", "TOUCH_NODE_1", vecTouchNode1))
+    {
+        
+        return 0;
+    }
+
+    for (it = vecTouchNode1.begin(); it != vecTouchNode1.end(); ++it)
+    {
+        std::wstring strRegex = *it;
+        int num = 0;
+    }
+
+    return sprintf_s(szBuf, nBufLen, "%s", szVer);
+}
+
 int main()
 {
+    char buf[1000] = { 0 };
+    GetTouchVer(buf,1000);
+    static vector<wstring> vecTouchNode1;
+    vector<wstring>::iterator it11 = vecTouchNode1.begin();
+    int  i = 0;
+    std::vector<wstring> arrHard = /*{ L"1.*" };//*/ { L"USB\\\\VID_067B&PID_2303&REV_0400", L"USB\\\\VID_067B&PID_2303&REV_0400.*" };
+    std::vector<wstring>::iterator it;
+    //arrHard[0] = L"USB\\\\VID_067B&PID_2303&REV_0400";
+    for (it = arrHard.begin(); it != arrHard.end(); ++it, i++)
+    {
+        wstring wstrHardid = /*{L"1.11"}; //*/ L"USB\\VID_067B&PID_2303&REV_0400.1111_111";
+        wregex pattern(*it);
+        wsmatch  matchResult;
+        //LOG(INFO) << "szHardWareID:" << SysUtil::ws2s(szHardWareID).c_str();
+
+        //LOG(INFO) << "psRegex:" << SysUtil::ws2s(psRegex[i]).c_str();
+        if (regex_match(wstrHardid, matchResult, pattern))
+        {
+            int num = 0;
+            int n = 0;
+        }
+    }
+
+    GetBuzzerHardidandInf();
+    SetUpTouchDevconByForce();
+    GetTPHardidandInf();
     SetUpCamByDevconByForce();
     GetCamHardidandInf();
     Get_Node_MIC_55();
@@ -181,6 +352,7 @@ int main()
     std::vector<wstring> vec;
     std::vector<wstring> vec2;
     std::vector<NODE_ATTRIBUTE_DEVICE> vec3;
+    
     CXmlManager::GetInstance().GetNodeValue("CHECKDEVICE", "CAM", "CAM_NODE_2", vec2);
     CXmlManager::GetInstance().GetNodeValue("CHECKDEVICE", "CAM", "NODE_VIDPID_6D", value);
     CXmlManager::GetInstance().GetNodeAttribute("SETUPDRIVERS", "MIC", "SETUPALL", "MIC_DRIVER_INF_FILE_55", "hardid", value);
@@ -195,9 +367,13 @@ int main()
     CXmlManager::GetInstance().GetNodeValue("CHECKDEVICE", "CAM", "NODE_VIDPID_6D", value);
     CXmlManager::GetInstance().GetNodeValue("CHECKDEVICE", "MIC", "MIC_NODE_1", vec2);
     int nMicArrNum = 1;
-    wchar_t* psMicIdRegex[8] = { 0 };
+    wchar_t** psMicIdRegex = new wchar_t*[20];
+   
     static vector<wstring> vecNode1;
     static vector<wstring> vecNode3;
+    static vector<wstring> vecTPNode1;
+    GetVidPidInfoFromXML("CHECKDEVICE", "TOUCH", "TOUCH_NODE_1", psMicIdRegex, nMicArrNum, vecTPNode1);
+    wchar_t* pp = psMicIdRegex[1];
     GetVidPidInfoFromXML("SETUPDRIVERS", "MIC", "CHECKALL", psMicIdRegex, nMicArrNum, vecNode1);
     GetVidPidInfoFromXML("SETUPDRIVERS", "CAM", "CHECKALL", psMicIdRegex, nMicArrNum, vecNode3);
     GetVidPidInfoFromXML("CHECKDEVICE", "MIC", "MIC_NODE_1", psMicIdRegex, nMicArrNum, vecNode1);
@@ -205,7 +381,7 @@ int main()
     vecNode1.shrink_to_fit();
     GetVidPidInfoFromXML("CHECKDEVICE", "MIC", "MIC_NODE_2", psMicIdRegex, nMicArrNum, vecNode1);
     GetVidPidInfoFromXML("CHECKDEVICE", "CAM", "CAM_NODE_1", psMicIdRegex, nMicArrNum, vecNode3);
-
+    
     isMatchdVidPidFromPlugEvent("HOTPLUGEVENT", "TOUCH_REGEX", L"HID#VID_0457&PID_1548&Col03", vec2);
     isMatchdVidPidFromPlugEvent("HOTPLUGEVENT", "TOUCH_REGEX", L"", vec2);
     CXmlManager::GetInstance().GetNodeValue("CAM", vec);
@@ -215,6 +391,8 @@ int main()
     CXmlManager::GetInstance().GetNodeAttribute("MIC", "STR_MIC_HARDID_75_REGEX", "name", value);
     CXmlManager::GetInstance().GetNodeAttribute("MIC", "STR_MIC_HARDID_55_REGEX", "name", value);
     
+    delete[]psMicIdRegex;
+    psMicIdRegex = nullptr;
     return 0;
 }
 

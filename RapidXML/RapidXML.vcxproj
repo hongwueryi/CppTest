@@ -151,6 +151,9 @@
     <ClInclude Include="rapidxml\rapidxml_utils.hpp" />
     <ClInclude Include="xmlmanager.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Xml Include="config.xml" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
