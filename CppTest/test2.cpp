@@ -8,6 +8,7 @@
 #include <string>
 #include <tchar.h>
 #include "udpprxoy.h"
+#include <sstream>
 
 using namespace std;
 
@@ -217,8 +218,81 @@ void callback_parse_udp_data(void* pData, unsigned int uDataLen)
 	printf("%s\n", pData);
 }
 
+int CompareVersion(char* ReadVer, char* newVer)
+{
+    char oldVer[20] = { 0 };
+    sprintf_s(oldVer, "%d.%d.%d", ReadVer[2], ReadVer[3], ReadVer[4]);
+    istringstream isNewVer(newVer);
+    istringstream isOldVer(oldVer);
+    string string1;
+    string string2;
+    while (!isNewVer.eof() || !isOldVer.eof())
+    {
+        getline(isNewVer, string1, '.');
+        getline(isOldVer, string2, '.');
+        if (stoi(string1) > stoi(string2))
+            return 1;
+        if (stoi(string1) < stoi(string2))
+            return -1;
+        string1 = string2 = "0";
+    }
+    return 0;
+}
+
+class cdten
+{
+public:
+    cdten() {};
+    friend class CDTEN_VERSION_DETECT;
+};
+class CDTEN_VERSION_DETECT
+{
+public:
+    CDTEN_VERSION_DETECT() { printf("construct.\n"); }
+    ~CDTEN_VERSION_DETECT() { printf("destruct.\n"); }
+    static CDTEN_VERSION_DETECT* GetInstance()
+    {
+        if (!s_pVerDectet)
+        {
+            s_pVerDectet = new CDTEN_VERSION_DETECT;
+            printf("123.\n");
+        }
+
+        return s_pVerDectet;
+    }
+    void test() {}
+private:
+    
+    static CDTEN_VERSION_DETECT* s_pVerDectet;
+};
+CDTEN_VERSION_DETECT* CDTEN_VERSION_DETECT::s_pVerDectet = nullptr;
 int main()
 {
+    char bbb[12] = { 0 };
+    std::string stt = bbb;
+    cdten dten2;
+    CDTEN_VERSION_DETECT* a1 = CDTEN_VERSION_DETECT::GetInstance();
+    CDTEN_VERSION_DETECT::GetInstance()->test();
+    CDTEN_VERSION_DETECT::GetInstance()->test();
+    CDTEN_VERSION_DETECT::GetInstance()->test();
+
+#if 0
+    string strVer = "1.9.8b";
+    
+    uint8_t newVer[128] = { 0 };
+    char* token = strtok((char*)strVer.c_str(), ".");
+    int i = 2;
+    if (nullptr != token)
+        newVer[i] = stoi(token, 0, 16);
+    else
+        return -1;
+    while (token != nullptr) {
+        i++;
+        token = strtok(nullptr, ".");
+        if (token != nullptr)
+            newVer[i] = stoi(token, 0, 16);
+    }
+#endif
 #if 0
 	DWORD dwThreadId;
 	string strCmd = "reg add \"HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\DTEN\" /f /v \"disable_hdmi_auto\" /t REG_DWORD /d \"1\"";
@@ -474,7 +548,7 @@ int main()
         token = wcstok_s(nullptr, seps, &nexttoken);
     }
 #endif
-#if 1
+#if 0
     WCHAR szItemValue[] = L"Chinese\0english\0中文";
     int len = sizeof(szItemValue);
 	ModifyRegMultiSZ(L"SOFTWARE\\TEST", L"item", szItemValue, sizeof(szItemValue));

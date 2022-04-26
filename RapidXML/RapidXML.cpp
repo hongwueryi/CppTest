@@ -316,9 +316,42 @@ int GetTouchVer(char* szBuf, int nBufLen)
 
     return sprintf_s(szBuf, nBufLen, "%s", szVer);
 }
+#define CONFIG_INIFILE_NAME_A				"C:\\DTEN\\version\\version.ini"
+int compareVersion(char* v1, char* v2) {
+    int res = 0;
+    //char* v1 = (char*)version1.c_str(), * v2 = (char*)version2.c_str();
+    while (res == 0 && (*v1 != '\0' || *v2 != '\0')) {
+        long d1 = *v1 == '\0' ? 0 : strtol(v1, &v1, 10);
+        long d2 = *v2 == '\0' ? 0 : strtol(v2, &v2, 10);
+        if (d1 > d2) return 1;
+        else if (d1 < d2) return -1;
+        else {
+            if (*v1 != '\0') ++v1;
+            if (*v2 != '\0') ++v2;
+        }
+    }
+    return res;
+}
 
-int main()
+int ra_main()
 {
+    int icmp = compareVersion((char*)"5.9.0.4", (char*)"5.10.0");
+#if 0
+    char szVID[256] = { 0 };
+    char szPID[256] = { 0 };
+    GetPrivateProfileStringA("DTEN", "cam_firm_upgrade_vid", "", szVID, 256, CONFIG_INIFILE_NAME_A);
+    GetPrivateProfileStringA("DTEN", "cam_firm_upgrade_pid", "", szPID, 256, CONFIG_INIFILE_NAME_A);
+    int HexVid = 0X1D6B;
+    if (0 != strlen(szVID))
+    {
+        HexVid = stoi(szVID, 0, 16);
+    }
+    int HexPid = 0x0100;
+    if (0 != strlen(szPID))
+    {
+        HexPid = stoi(szPID, 0, 16);
+    }
+#endif
     char buf[1000] = { 0 };
     GetTouchVer(buf,1000);
     static vector<wstring> vecTouchNode1;
