@@ -10,7 +10,7 @@ using namespace rapidxml;
 
 #define DTEN_XML_FLAG "DTEN"
 #define XMLPATH1 "E:\\Dten\\other demo\\CppTest\\Debug\\config.xml"
-#define XMLPATH "E:\\Dten\\gitDten\\remote\\DTENOTA_3458\\DTENOTA\\DTENOTA\\config.xml"
+#define XMLPATH "E:\\Dten\\gitDten\\remote\\DTENOTA_G3\\DTENOTA\\config.xml"
 
 xml_node<>* g_root = 0;
 std::mutex g_xmlMutex;

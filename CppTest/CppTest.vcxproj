@@ -88,7 +88,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS	;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <SDLCheck>true</SDLCheck>
+      <SDLCheck>false</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)libsocket;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -145,7 +145,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <SDLCheck>true</SDLCheck>
+      <SDLCheck>false</SDLCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalIncludeDirectories>$(SolutionDir)libsocket</AdditionalIncludeDirectories>
     </ClCompile>
@@ -161,6 +161,8 @@
     <ClInclude Include="ExceptionReport.h" />
     <ClInclude Include="method.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="SerialPort\EnumSerial.h" />
+    <ClInclude Include="SerialPort\SerialPort.h" />
     <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="usb.h" />
     <ClInclude Include="virtualkey.h" />
@@ -168,6 +170,9 @@
   <ItemGroup>
     <ClCompile Include="ExceptionReport.cpp" />
     <ClCompile Include="MyQueue.cpp" />
+    <ClCompile Include="serialportcomm.cpp" />
+    <ClCompile Include="SerialPort\EnumSerial.cpp" />
+    <ClCompile Include="SerialPort\SerialPort.cpp" />
     <ClCompile Include="test.cpp" />
     <ClCompile Include="test2.cpp" />
     <ClCompile Include="ThreadPool.cpp" />

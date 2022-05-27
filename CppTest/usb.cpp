@@ -25,6 +25,7 @@ std::string ws2s(const std::wstring& ws)
 
 int dwGetCurDrvInfo(LPGUID pClsGuid, LPCTSTR lpEnumerator, TCHAR* psRegex[], int nRegexNum, DevDrvInfo* pInfo)
 {
+#if 0
     TCHAR* arrSpeakerHard[2] = { NULL, L"USB\\\\Vid_1d6b&Pid_0105&Rev_.{4}&MI_00" };
     wstring wstrHardid = L"USB\\Vid_1d6b&Pid_0105&Rev_0101&MI_00";
     wregex pattern(arrSpeakerHard[1]);
@@ -34,6 +35,8 @@ int dwGetCurDrvInfo(LPGUID pClsGuid, LPCTSTR lpEnumerator, TCHAR* psRegex[], int
     {
         int num = 0;
     }
+
+#endif
 
     int nRet = ERR_DEVICE_NO_FOUND, iIndex = 0, i = 0;
     DWORD dwProblem = 0, dwDevState = 0;

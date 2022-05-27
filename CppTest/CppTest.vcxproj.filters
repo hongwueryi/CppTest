@@ -7,6 +7,13 @@
     <ClCompile Include="MyQueue.cpp" />
     <ClCompile Include="test2.cpp" />
     <ClCompile Include="usb.cpp" />
+    <ClCompile Include="serialportcomm.cpp" />
+    <ClCompile Include="SerialPort\EnumSerial.cpp">
+      <Filter>SerialPort</Filter>
+    </ClCompile>
+    <ClCompile Include="SerialPort\SerialPort.cpp">
+      <Filter>SerialPort</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="method.h" />
@@ -15,6 +22,12 @@
     <ClInclude Include="ExceptionReport.h" />
     <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="usb.h" />
+    <ClInclude Include="SerialPort\EnumSerial.h">
+      <Filter>SerialPort</Filter>
+    </ClInclude>
+    <ClInclude Include="SerialPort\SerialPort.h">
+      <Filter>SerialPort</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CppTest.rc" />
@@ -25,6 +38,9 @@
   <ItemGroup>
     <Filter Include="idl">
       <UniqueIdentifier>{17a79583-4064-4893-934d-bcb148b88ee7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SerialPort">
+      <UniqueIdentifier>{07937481-083e-47ae-b670-ef47c8e1c062}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

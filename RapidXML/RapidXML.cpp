@@ -333,8 +333,86 @@ int compareVersion(char* v1, char* v2) {
     return res;
 }
 
-int ra_main()
+
+bool GetSubCamHardIDAndInfFile(std::string strVidPid, const char* subcamType, const char* deviceType,
+    std::vector<wstring>& allvidpid, NODE_ATTRIBUTE_DEVICE& NodeInfo)
 {
+    if (!NodeInfo.hardid.empty() && !NodeInfo.inffile.empty())
+    {
+                return true;
+    }
+    if (allvidpid.empty())
+    {
+        CXmlManager::GetInstance().GetNodeValue("SETUPDRIVERS", subcamType, deviceType, "ALLVIDPID", allvidpid);
+    }
+    if (allvidpid.empty())
+    {
+        
+        return false;
+    }
+
+    std::vector<wstring>::iterator it;
+    for (it = allvidpid.begin(); it != allvidpid.end(); ++it)
+    {
+        string temp = UnicodeToAscii(*it);
+        if (strVidPid.find(temp) != std::string::npos)
+        {
+            NODE_ATTRIBUTE_DEVICE Info;
+            CXmlManager::GetInstance().GetNodeAttribute("SETUPDRIVERS", subcamType, deviceType, temp.c_str(), Info);
+            NodeInfo = Info;
+            return true;
+        }
+    }
+
+    return false;
+}
+void SetUpSubCamByDevconByForce(const char* deviceType)
+{
+    static std::vector<NODE_ATTRIBUTE_DEVICE> allSubCaminf;
+    if (allSubCaminf.empty())
+    {
+        CXmlManager::GetInstance().GetNodeAttribute("SETUPDRIVERS", "CAM_SUB", deviceType, "SETUPALL", allSubCaminf);
+    }
+    if (allSubCaminf.empty())
+    {
+       
+        return;
+    }
+    std::vector<NODE_ATTRIBUTE_DEVICE>::iterator it;
+    for (it = allSubCaminf.begin(); it != allSubCaminf.end(); ++it)
+    {
+        string strinf = UnicodeToAscii(it->inffile);
+        string strhardid = UnicodeToAscii(it->hardid);
+    }
+}
+
+
+void GetSubCamHardidandInf()
+{
+    std::vector<wstring> vec2;
+    isMatchdVidPidFromPlugEvent("HOTPLUGEVENT", "CAM_SUB_REGEX", L"USB#VID_2945&PID_2002#", vec2);
+
+    std::string strMicPID = "USB\VID_351E&PID_00CA&REV_0409";
+    static std::vector<wstring> allvidpid;
+    static NODE_ATTRIBUTE_DEVICE NodeInfo1;
+    if (!GetSubCamHardIDAndInfFile(strMicPID, "CAM_SUB_A", "D7PRO", allvidpid, NodeInfo1))
+    {
+        return;
+    }
+    static std::vector<wstring> allvidpid2;
+    static NODE_ATTRIBUTE_DEVICE NodeInfo2;
+    strMicPID = "USB\VID_351E&PID_00CB&REV_0409";
+    if (!GetSubCamHardIDAndInfFile(strMicPID, "CAM_SUB_B", "D7PRO", allvidpid2, NodeInfo2))
+    {
+        return;
+    }
+    SetUpSubCamByDevconByForce("D7PRO");
+    return;
+}
+
+int main()
+{
+    GetSubCamHardidandInf();
     int icmp = compareVersion((char*)"5.9.0.4", (char*)"5.10.0");
 #if 0
     char szVID[256] = { 0 };
@@ -365,9 +443,9 @@ int ra_main()
         wstring wstrHardid = /*{L"1.11"}; //*/ L"USB\\VID_067B&PID_2303&REV_0400.1111_111";
         wregex pattern(*it);
         wsmatch  matchResult;
-        //LOG(INFO) << "szHardWareID:" << SysUtil::ws2s(szHardWareID).c_str();
+        //LOG(INFO) << "szHardWareID:" << SysUtil::ws2string(szHardWareID).c_str();
 
-        //LOG(INFO) << "psRegex:" << SysUtil::ws2s(psRegex[i]).c_str();
+        //LOG(INFO) << "psRegex:" << SysUtil::ws2string(psRegex[i]).c_str();
         if (regex_match(wstrHardid, matchResult, pattern))
         {
             int num = 0;

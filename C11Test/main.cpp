@@ -380,7 +380,7 @@ public:
 #include <deque>
 std::deque<int>g_data;
 std::atomic<bool> atomic_IsReady(false);
-int main()
+int main11()
 {
 	threadsafe_queue<int> safequeue;
 	std::thread t111([&]{
@@ -470,8 +470,18 @@ int main()
 	return 0;
 }
 
-int main111()
+int main()
 {
+
+	std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+	
+	Sleep(3000);
+	std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+	std::chrono::duration<uint64_t> time_span = std::chrono::duration_cast<duration<uint64_t>>(t2 - t1);
+	uint64_t dspan = time_span.count();  //seconds
+	
+
+
 	std::lock(tlock1_mux, tlock2_mux);
 	std::thread tLock1(tLock1Proc);
 	std::thread tLock2(tLock2Proc);

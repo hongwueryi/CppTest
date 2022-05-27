@@ -24,7 +24,7 @@ BOOL ModifyRegMultiSZ(LPCWSTR lpKeyPath, LPCWSTR lpItem, LPCTSTR dwValue, int le
         NULL,
         NULL,
         REG_OPTION_NON_VOLATILE,
-        KEY_ALL_ACCESS,
+        KEY_ALL_ACCESS | KEY_WOW64_64KEY,
         NULL,
         &hKey,
         0))
@@ -238,44 +238,73 @@ int CompareVersion(char* ReadVer, char* newVer)
     }
     return 0;
 }
+const GUID SubCamClassGuid = { 0x6cfd2a07L, 0x7437, 0x42c7,  { 0x9f, 0x6e, 0x2c, 0x87, 0xfc, 0x19, 0xa6, 0x5c } };
 
-class cdten
+#include <atlstr.h>
+#pragma comment(lib, "Version.lib")
+/*
+可以测试的属性pszType:
+CompanyName FileDescription FileVersion InternalName LegalCopyright OriginalFilename
+ProductName ProductVersion Comments LegalTrademarks PrivateBuild SpecialBuild
+*/
+CString GetFileVerInfo(LPCTSTR  strFilePath, LPCTSTR pszType)
 {
-public:
-    cdten() {};
-    friend class CDTEN_VERSION_DETECT;
-};
-class CDTEN_VERSION_DETECT
-{
-public:
-    CDTEN_VERSION_DETECT() { printf("construct.\n"); }
-    ~CDTEN_VERSION_DETECT() { printf("destruct.\n"); }
-    static CDTEN_VERSION_DETECT* GetInstance()
-    {
-        if (!s_pVerDectet)
-        {
-            s_pVerDectet = new CDTEN_VERSION_DETECT;
-            printf("123.\n");
-        }
+    DWORD dwSize;
+    DWORD dwRtn;
+    CString szVersion;
+    if (strFilePath == NULL)
+        return L"";
 
-        return s_pVerDectet;
-    }
-    void test() {}
-private:
-    
-    static CDTEN_VERSION_DETECT* s_pVerDectet;
-};
-CDTEN_VERSION_DETECT* CDTEN_VERSION_DETECT::s_pVerDectet = nullptr;
+    dwSize = GetFileVersionInfoSize(strFilePath, NULL);
+    if (dwSize == 0)
+        return L"";
+
+    CHAR* pBuf;
+    pBuf = new CHAR[dwSize + 1];
+    if (pBuf == NULL)
+        return L"";
+
+    memset(pBuf, 0, dwSize + 1);
+    dwRtn = GetFileVersionInfo(strFilePath, NULL, dwSize, pBuf);
+    if (dwRtn == 0)
+        return L"";
+
+    char* pVerValue = NULL;
+    UINT nSize = 0;
+    dwRtn = VerQueryValue(pBuf, TEXT("\\VarFileInfo\\Translation"), (LPVOID*)&pVerValue, &nSize);
+    if (dwRtn == 0)
+        return L"";
+    CString strSubBlock, strTranslation, strTemp;
+    strTemp.Format(L"%04x", *((unsigned short int*)pVerValue));
+    strTranslation = strTemp;
+    strTemp.Format(L"%04x", *((unsigned short int*) & pVerValue[2]));
+    strTranslation += strTemp;
+    //080404b0为中文，040904E4为英文
+
+    strSubBlock.Format(L"\\StringFileInfo\\%ws\\%ws", strTranslation, pszType);
+    dwRtn = VerQueryValue(pBuf, strSubBlock.GetBufferSetLength(256), (LPVOID*)&pVerValue, &nSize);
+    strSubBlock.ReleaseBuffer();
+    if (dwRtn == 0)
+        return L"";
+
+    szVersion = (TCHAR*)pVerValue;
+    delete pBuf;
+    return szVersion;
+}
+
 int main()
 {
-    char bbb[12] = { 0 };
-    std::string stt = bbb;
-    cdten dten2;
-    CDTEN_VERSION_DETECT* a1 = CDTEN_VERSION_DETECT::GetInstance();
-    CDTEN_VERSION_DETECT::GetInstance()->test();
-    CDTEN_VERSION_DETECT::GetInstance()->test();
-    CDTEN_VERSION_DETECT::GetInstance()->test();
 
+#if 1
+    CString vers = GetFileVerInfo(
+        L"C:\\DTEN\\DTENServices\\DTENServices.exe", L"FileVersion");
+    int nn = 0;
+#endif
+#if 0
+    TCHAR* arrSpeakerHard2[1] = { _T("USB\\\\VID_351E&PID_00CD&REV_.{4}")};
+    DevDrvInfo drvInfoD = { 0 };
+    int nRetCD = dwGetCurDrvInfo((LPGUID)&SubCamClassGuid, _T("USB"), arrSpeakerHard2, 1, &drvInfoD);
+#endif
 #if 0
     string strVer = "1.9.8b";
     
@@ -549,10 +578,17 @@ int main()
     }
 #endif
 #if 0
-    WCHAR szItemValue[] = L"Chinese\0english\0中文";
+    WCHAR szItemValue[] = L"DTAPServices_*.log\0 \
+DTEN_DAEMON_PROCESS_*.log\0 \
+中文\
+abc\0efga";
     int len = sizeof(szItemValue);
-	ModifyRegMultiSZ(L"SOFTWARE\\TEST", L"item", szItemValue, sizeof(szItemValue));
+    ModifyRegMultiSZ(L"SOFTWARE\\Microsoft\\SkypeRoomSystem", L"Oem-Tracking", szItemValue, sizeof(szItemValue));
+    WCHAR szItemValue2[] = L"Chinese\0english\0中文";
+    int len2 = sizeof(szItemValue2);
+	//ModifyRegMultiSZ(L"SOFTWARE\\TEST", L"item", szItemValue2, sizeof(szItemValue2));
 #endif
-
+    int num = 0;
+    system("pause");
 	return 0;
 }
