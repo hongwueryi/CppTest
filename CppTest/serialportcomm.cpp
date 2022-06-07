@@ -9,7 +9,7 @@
 using namespace std;
 
 #define DEV_DESC_LEN 512
-#define ALS_DEVDESC L""
+#define ALS_DEVDESC L"USB-SERIAL CH341A"
 #define MAX_SERIALPORT_RW_CATCH_SIZE		1024
 
 #define ALS_WRITE 0
@@ -95,13 +95,15 @@ void Get_Product_No(void)
 }
 #endif
 
-int main___()
+int main()
 {
-    wstring ALSPortName = L"USB - SERIAL CH340(COM3)";
+    //wstring ALSPortName = L"USB - SERIAL CH340(COM3)";
+    wstring ALSPortName = L"";
     std::vector<SSerInfo> m_vecSerialPortInfo;
     if (!EnumSerialPorts(m_vecSerialPortInfo, FALSE))
     {
         printf("Error EnumSerialPorts\n");
+        system("pause");
         return 0;
     }
     for (std::vector<SSerInfo>::iterator iter = m_vecSerialPortInfo.begin(); iter != m_vecSerialPortInfo.end(); iter++)
@@ -119,7 +121,12 @@ int main___()
     if (lRet != ERROR_SUCCESS)
     {
         printf("open ALS comport failed, err=%d\n", GetLastError());
+        system("pause");
         return 0;
+    }
+    else
+    {
+        printf("open ALS comport ok\n");
     }
 
 #if 0
@@ -133,7 +140,7 @@ int main___()
         printf("close ALS PORT failed\n");
     }
 #endif
-
+#if 0
     lRet = cs.Setup(CSerial::EBaud115200, CSerial::EData8, CSerial::EParNone, CSerial::EStop1);
     if (lRet != ERROR_SUCCESS)
     {
@@ -143,7 +150,7 @@ int main___()
     
     //Get_Product_No();
     I2CwriteByteMask(ALS_I2C_ADR, REG_SYSM_CTRL, 0x01, Enable_ALS);
-
+#endif
 exit:
     cs.Close();
     system("pause");

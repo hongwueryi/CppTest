@@ -7,7 +7,10 @@
 #include <string>
 #include "usb.h"
 #include <locale.h>
+#include <initguid.h>
 using namespace std;
+DEFINE_GUID(GUID_CLASS_I82930_MIC, 0x877fc334, 0xf128, 0x47f4, 0x90, 0x50, 0x7c, 0x3e, 0x78, 0x25, 0x95, 0x2b);
+
 std::string ws2s(const std::wstring& ws)
 {
     std::string curLocale = setlocale(LC_ALL, NULL);      // curLocale = "C";
@@ -234,5 +237,146 @@ int GetDrvStatusByName(std::wstring FriendlyName)
     }
     SetupDiDestroyDeviceInfoList(hDevInfo);
     LOG(INFO) << "SetDrvStatusByName End, isfind speaker=" << nRet;
+    return nRet;
+}
+
+BOOL ListDeviceInstancePath(char* strVer)
+{
+    HDEVINFO hdev = INVALID_HANDLE_VALUE;
+    DWORD idx = 0;
+    GUID guid = GUID_CLASS_I82930_MIC;
+    BOOL bRet = FALSE;
+    BOOL nStatus;
+    DWORD dwSize = 0;
+
+    //获取由guid所指定类型的系统中已经安装的设备接口类集合的句柄
+    hdev = SetupDiGetClassDevs(&guid,
+        NULL,
+        NULL,
+        DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+
+    if (hdev == INVALID_HANDLE_VALUE)
+    {
+        LOG(ERROR) << "ERROR : Unable to enumerate device GetLastError is:" << hex << GetLastError();
+        return FALSE;
+    }
+
+    SP_DEVICE_INTERFACE_DATA  DeviceInterfaceData;
+    DeviceInterfaceData.cbSize = sizeof(DeviceInterfaceData);
+
+    for (idx = 0; SetupDiEnumDeviceInterfaces(hdev, NULL, &guid, idx, &DeviceInterfaceData); idx++)
+    {
+        nStatus = SetupDiGetDeviceInterfaceDetail(hdev, &DeviceInterfaceData, NULL, 0, &dwSize, NULL);
+
+        if (!dwSize)
+        {
+            bRet = FALSE;
+            LOG(ERROR) << "SetupDiGetDeviceInterfaceDetail GetLastError:" << GetLastError();
+            break;
+        }
+
+        PSP_DEVICE_INTERFACE_DETAIL_DATA_A pBuffer = (PSP_DEVICE_INTERFACE_DETAIL_DATA_A)malloc(dwSize);
+        ZeroMemory(pBuffer, sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA_A));
+        pBuffer->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA_A);
+
+        SP_DEVINFO_DATA DeviceInfoData = { sizeof(SP_DEVINFO_DATA) };
+        nStatus = SetupDiGetDeviceInterfaceDetailA(hdev, &DeviceInterfaceData, pBuffer, dwSize, &dwSize, &DeviceInfoData);
+
+        LOG(INFO) << "DeviceInterfaceData.Flags:[" << DeviceInterfaceData.Flags << "]";
+
+        if (!nStatus)
+        {
+            bRet = FALSE;
+            free(pBuffer);
+            LOG(ERROR) << "ERROR : SetupDiGetDeviceInterfaceDetailA fial, GetLastError:" << GetLastError();
+            break;
+        }
+
+        //wprintf(L"%s\n", pBuffer->DevicePath);
+        //strVer = pBuffer->DevicePath;
+        bRet = TRUE;
+        strcpy(strVer, pBuffer->DevicePath);
+        printf("DevicePath:%s\n", strVer);
+        free(pBuffer);
+    }
+
+    SetupDiDestroyDeviceInfoList(hdev);
+
+    return bRet;
+}
+
+void ToUppercase(char* pData)
+{
+    if (NULL == pData || 0 == strlen(pData))
+    {
+        return;
+    }
+
+    int nLen = strlen(pData);
+
+    for (size_t i = 0; i < nLen; i++)
+    {
+        if (pData[i] >= 'a' && pData[i] <= 'z')
+        {
+            pData[i] = pData[i] + ('A' - 'a');
+        }
+    }
+}
+
+BOOL ParseMicVer(char* pVer, char* pOut)
+{
+    BOOL bRet = FALSE;
+
+    if (NULL == pVer || NULL == pOut)
+    {
+        return bRet;
+    }
+
+    do
+    {
+        ToUppercase(pVer);
+        char* pTem1 = strstr(pVer, "UAC");
+
+        if (NULL == pTem1)
+        {
+            break;
+        }
+
+        char* pTem2 = strstr(pTem1, "#");
+
+        if (NULL == pTem2)
+        {
+            break;
+        }
+
+        strncpy(pOut, pTem1 + 3, pTem2 - pTem1 - strlen("UAC"));
+        bRet = TRUE;
+    } while (0);
+
+    return bRet;
+}
+
+int getCurMicVer(char* pOutVer, int nBufLen)
+{
+    int nRet = DEVICE_NORMAL;
+    char strCurVerInfo[MAX_PATH] = { 0 };
+
+    if (!pOutVer || nBufLen < sizeof(strCurVerInfo))
+    {
+        return -1;
+    }
+
+    if (!ListDeviceInstancePath(strCurVerInfo))
+    {
+        printf("ListDeviceInstancePath failed.\n");
+        return -1;
+    }
+
+    if (!ParseMicVer(strCurVerInfo, pOutVer))
+    {
+        printf("ParseMicVer failed.\n");
+        return -1;
+    }
+    printf("pOutVer:%s\n", pOutVer);
     return nRet;
 }

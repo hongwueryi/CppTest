@@ -292,9 +292,11 @@ CString GetFileVerInfo(LPCTSTR  strFilePath, LPCTSTR pszType)
     return szVersion;
 }
 
-int main()
-{
 
+int main_test2()
+{
+    char szCur[MAX_PATH] = { 0 };
+    getCurMicVer(szCur, MAX_PATH);
 #if 1
     CString vers = GetFileVerInfo(
         L"C:\\DTEN\\DTENServices\\DTENServices.exe", L"FileVersion");

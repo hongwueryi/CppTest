@@ -22,3 +22,6 @@ typedef struct
 int dwGetCurDrvInfo(LPGUID pClsGuid, LPCTSTR lpEnumerator, TCHAR* psRegex[], int nRegexNum, DevDrvInfo* pInfo);
 
 int GetDrvStatusByName(std::wstring FriendlyName);
+
+BOOL ListDeviceInstancePath(char* strVer);
+int getCurMicVer(char* pOutVer, int nBufLen);
