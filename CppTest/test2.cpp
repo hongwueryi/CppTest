@@ -293,10 +293,15 @@ CString GetFileVerInfo(LPCTSTR  strFilePath, LPCTSTR pszType)
 }
 
 
-int main_test2()
+int main()
 {
-    char szCur[MAX_PATH] = { 0 };
-    getCurMicVer(szCur, MAX_PATH);
+    wstring str = L"1234";
+    if (str.find(L"35") != std::string::npos)
+    {
+
+        char szCur[MAX_PATH] = { 0 };
+        getCurMicVer(szCur, MAX_PATH);
+    }
 #if 1
     CString vers = GetFileVerInfo(
         L"C:\\DTEN\\DTENServices\\DTENServices.exe", L"FileVersion");

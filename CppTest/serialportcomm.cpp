@@ -95,7 +95,7 @@ void Get_Product_No(void)
 }
 #endif
 
-int main()
+int main_serial()
 {
     //wstring ALSPortName = L"USB - SERIAL CH340(COM3)";
     wstring ALSPortName = L"";

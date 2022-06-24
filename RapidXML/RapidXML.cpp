@@ -410,10 +410,31 @@ void GetSubCamHardidandInf()
     return;
 }
 
+void mainTest()
+{
+
+    vector<wstring> vecTPNode12;
+    CXmlManager::GetInstance().GetNodeValue("CHECKDEVICE", "TOUCH", "TOUCH_NODE_1", vecTPNode12);
+    CXmlManager::GetInstance().GetNodeValue("CHECKDEVICE", "TOUCH", "TOUCH_NODE_1", vecTPNode12);
+    CXmlManager::GetInstance().GetNodeValue("CHECKDEVICE", "TOUCH", "TOUCH_NODE_1", vecTPNode12);
+    CXmlManager::GetInstance().GetNodeValue("CHECKDEVICE", "TOUCH", "TOUCH_NODE_1", vecTPNode12);
+}
 int main()
 {
+#if 1
+    mainTest();
+    system("pause");
+    return 0;
+#endif
+#if 0
+    wstring wsmame;
+    CXmlManager::GetInstance().GetNodeAttribute("SETUPDRIVERS", "CAM", "D7PRO", "name", wsmame);
+    Sleep(1000);
+    CXmlManager::GetInstance().Init(true);
+    CXmlManager::GetInstance().GetNodeAttribute("SETUPDRIVERS", "CAM", "D7PRO", "name", wsmame);
     GetSubCamHardidandInf();
     int icmp = compareVersion((char*)"5.9.0.4", (char*)"5.10.0");
+#endif
 #if 0
     char szVID[256] = { 0 };
     char szPID[256] = { 0 };
@@ -462,10 +483,17 @@ int main()
     wstring value;
     std::vector<wstring> vec;
     std::vector<wstring> vec2;
+    std::vector<wstring> vec5;
+    std::vector<wstring> vec4;
     std::vector<NODE_ATTRIBUTE_DEVICE> vec3;
     
     CXmlManager::GetInstance().GetNodeValue("CHECKDEVICE", "CAM", "CAM_NODE_2", vec2);
-    CXmlManager::GetInstance().GetNodeValue("CHECKDEVICE", "CAM", "NODE_VIDPID_6D", value);
+    CXmlManager::GetInstance().GetNodeValue("CHECKDEVICE", "CAM", "CAM_NODE_1", vec);
+    Sleep(1000);
+    CXmlManager::GetInstance().Init();
+    CXmlManager::GetInstance().GetNodeValue("CHECKDEVICE", "CAM", "CAM_NODE_2", vec5);
+    CXmlManager::GetInstance().GetNodeValue("CHECKDEVICE", "CAM", "CAM_NODE_1", vec4);
+
     CXmlManager::GetInstance().GetNodeAttribute("SETUPDRIVERS", "MIC", "SETUPALL", "MIC_DRIVER_INF_FILE_55", "hardid", value);
     CXmlManager::GetInstance().GetNodeAttribute("CHECKDEVICE", "CAM", "VID_4255&PID_1001", "hardid", value);
     CXmlManager::GetInstance().GetNodeAttribute("SETUPDRIVERS", "MIC", "SETUPALL", vec3);
