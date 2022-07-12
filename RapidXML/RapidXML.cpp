@@ -55,7 +55,7 @@ bool GetVidPidInfoFromXML(const char* nodeRoot, const char* nodeType,
     return true;
 }
 
-bool GetVidPidInfoFromXML(const char* nodeRoot, const char* nodeType, const char* nodeName, wchar_t** psMicIdRegex, int& nMicArrNum, vector<wstring>&vecNode)
+bool GetVidPidInfoFromXML(const char* nodeRoot, const char* nodeType, const char* nodeName, wchar_t** psMicIdRegex, int& nMicArrNum, vector<wstring>& vecNode)
 {
     if (nullptr == psMicIdRegex)
     {
@@ -76,7 +76,7 @@ bool GetVidPidInfoFromXML(const char* nodeRoot, const char* nodeType, const char
         memset(psMicIdRegex[i], 0, tempLen + 1);
         wcscpy_s(psMicIdRegex[i], tempLen, wstemp.c_str());
     }
-    
+
     return true;
 }
 
@@ -146,7 +146,7 @@ bool GetTPHardIDAndInfFile(std::string strTPVidPid, const char* deviceType, std:
 {
     if (!NodeInfo.hardid.empty() && !NodeInfo.inffile.empty())
     {
-       return true;
+        return true;
     }
     if (allvidpid.empty())
     {
@@ -191,17 +191,6 @@ void Get_Node_MIC_55()
         return;
     }
     return;
-}
-
-void GetTPHardidandInf()
-{
-    std::string strMicPID = "USB\\VID_222A&PID_0001&REV_70.*";
-    static std::vector<wstring> allvidpid;
-    static NODE_ATTRIBUTE_DEVICE NodeInfo1;
-    if (!GetTPHardIDAndInfFile(strMicPID, "TOUCH_75", allvidpid, NodeInfo1))
-    {
-        return;
-    }
 }
 
 void GetCamHardidandInf()
@@ -299,12 +288,12 @@ int GetTouchVer(char* szBuf, int nBufLen)
     char szVer[128] = { 0 };
     bool bRet = false;
     string strHardId = "";
-   
+
     static vector<wstring> vecTouchNode1;
     vector<wstring>::iterator it;
     if (!GetVidPidInfoFromXML("CHECKDEVICE", "TOUCH", "TOUCH_NODE_1", vecTouchNode1))
     {
-        
+
         return 0;
     }
 
@@ -339,7 +328,7 @@ bool GetSubCamHardIDAndInfFile(std::string strVidPid, const char* subcamType, co
 {
     if (!NodeInfo.hardid.empty() && !NodeInfo.inffile.empty())
     {
-                return true;
+        return true;
     }
     if (allvidpid.empty())
     {
@@ -347,7 +336,7 @@ bool GetSubCamHardIDAndInfFile(std::string strVidPid, const char* subcamType, co
     }
     if (allvidpid.empty())
     {
-        
+
         return false;
     }
 
@@ -375,7 +364,7 @@ void SetUpSubCamByDevconByForce(const char* deviceType)
     }
     if (allSubCaminf.empty())
     {
-       
+
         return;
     }
     std::vector<NODE_ATTRIBUTE_DEVICE>::iterator it;
@@ -419,13 +408,21 @@ void mainTest()
     CXmlManager::GetInstance().GetNodeValue("CHECKDEVICE", "TOUCH", "TOUCH_NODE_1", vecTPNode12);
     CXmlManager::GetInstance().GetNodeValue("CHECKDEVICE", "TOUCH", "TOUCH_NODE_1", vecTPNode12);
 }
+
+void GetTPHardidandInf()
+{
+    std::string strMicPID = "USB\\VID_222A&PID_0001&REV_70.*";
+    static std::vector<wstring> allvidpid;
+    static NODE_ATTRIBUTE_DEVICE NodeInfo1;
+    if (!GetTPHardIDAndInfFile(strMicPID, "TOUCH_75", allvidpid, NodeInfo1))
+    {
+        return;
+    }
+}
+
 int main()
 {
-#if 1
-    mainTest();
-    system("pause");
-    return 0;
-#endif
+    GetTPHardidandInf();
 #if 0
     wstring wsmame;
     CXmlManager::GetInstance().GetNodeAttribute("SETUPDRIVERS", "CAM", "D7PRO", "name", wsmame);
@@ -452,11 +449,11 @@ int main()
     }
 #endif
     char buf[1000] = { 0 };
-    GetTouchVer(buf,1000);
+    GetTouchVer(buf, 1000);
     static vector<wstring> vecTouchNode1;
     vector<wstring>::iterator it11 = vecTouchNode1.begin();
     int  i = 0;
-    std::vector<wstring> arrHard = /*{ L"1.*" };//*/ { L"USB\\\\VID_067B&PID_2303&REV_0400", L"USB\\\\VID_067B&PID_2303&REV_0400.*" };
+    std::vector<wstring> arrHard = /*{ L"1.*" };//*/{ L"USB\\\\VID_067B&PID_2303&REV_0400", L"USB\\\\VID_067B&PID_2303&REV_0400.*" };
     std::vector<wstring>::iterator it;
     //arrHard[0] = L"USB\\\\VID_067B&PID_2303&REV_0400";
     for (it = arrHard.begin(); it != arrHard.end(); ++it, i++)
@@ -476,7 +473,6 @@ int main()
 
     GetBuzzerHardidandInf();
     SetUpTouchDevconByForce();
-    GetTPHardidandInf();
     SetUpCamByDevconByForce();
     GetCamHardidandInf();
     Get_Node_MIC_55();
@@ -486,7 +482,7 @@ int main()
     std::vector<wstring> vec5;
     std::vector<wstring> vec4;
     std::vector<NODE_ATTRIBUTE_DEVICE> vec3;
-    
+
     CXmlManager::GetInstance().GetNodeValue("CHECKDEVICE", "CAM", "CAM_NODE_2", vec2);
     CXmlManager::GetInstance().GetNodeValue("CHECKDEVICE", "CAM", "CAM_NODE_1", vec);
     Sleep(1000);
@@ -506,8 +502,8 @@ int main()
     CXmlManager::GetInstance().GetNodeValue("CHECKDEVICE", "CAM", "NODE_VIDPID_6D", value);
     CXmlManager::GetInstance().GetNodeValue("CHECKDEVICE", "MIC", "MIC_NODE_1", vec2);
     int nMicArrNum = 1;
-    wchar_t** psMicIdRegex = new wchar_t*[20];
-   
+    wchar_t** psMicIdRegex = new wchar_t* [20];
+
     static vector<wstring> vecNode1;
     static vector<wstring> vecNode3;
     static vector<wstring> vecTPNode1;
@@ -520,7 +516,7 @@ int main()
     vecNode1.shrink_to_fit();
     GetVidPidInfoFromXML("CHECKDEVICE", "MIC", "MIC_NODE_2", psMicIdRegex, nMicArrNum, vecNode1);
     GetVidPidInfoFromXML("CHECKDEVICE", "CAM", "CAM_NODE_1", psMicIdRegex, nMicArrNum, vecNode3);
-    
+
     isMatchdVidPidFromPlugEvent("HOTPLUGEVENT", "TOUCH_REGEX", L"HID#VID_0457&PID_1548&Col03", vec2);
     isMatchdVidPidFromPlugEvent("HOTPLUGEVENT", "TOUCH_REGEX", L"", vec2);
     CXmlManager::GetInstance().GetNodeValue("CAM", vec);
@@ -529,7 +525,7 @@ int main()
     CXmlManager::GetInstance().GetNodeValue("MIC", "STR_MIC_HARDID_75_REGEX", value);
     CXmlManager::GetInstance().GetNodeAttribute("MIC", "STR_MIC_HARDID_75_REGEX", "name", value);
     CXmlManager::GetInstance().GetNodeAttribute("MIC", "STR_MIC_HARDID_55_REGEX", "name", value);
-    
+
     delete[]psMicIdRegex;
     psMicIdRegex = nullptr;
     return 0;

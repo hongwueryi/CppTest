@@ -295,6 +295,22 @@ CString GetFileVerInfo(LPCTSTR  strFilePath, LPCTSTR pszType)
 
 int main()
 {
+    uint8_t newVer[10] = { 0 };
+    string strVer = "1.1.20";
+    char* token = strtok((char*)strVer.c_str(), ".");
+    int i = 2;
+    if (nullptr != token)
+        newVer[i] = stoi(token, 0, 16);
+    else
+        return -1;
+    while (token != nullptr)
+    {
+        i++;
+        token = strtok(nullptr, ".");
+        if (token != nullptr)
+            newVer[i] = stoi(token, 0, 16);
+    }
+
     wstring str = L"1234";
     if (str.find(L"35") != std::string::npos)
     {
