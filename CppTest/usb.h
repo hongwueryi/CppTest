@@ -20,8 +20,13 @@ typedef struct
     TCHAR tDrvVerDesc[MAX_DEVICE_DRIVER_VERSION_DESC];
 } DevDrvInfo;
 int dwGetCurDrvInfo(LPGUID pClsGuid, LPCTSTR lpEnumerator, TCHAR* psRegex[], int nRegexNum, DevDrvInfo* pInfo);
-
+int dwGetCurDrvInfo1(LPGUID pClsGuid, LPCTSTR lpEnumerator, std::vector<std::wstring> psRegex, DevDrvInfo* pInfo, std::wstring strDriverName);
+int dwGetCurDrvInfo2(LPGUID pClsGuid, LPCTSTR lpEnumerator, std::vector<std::wstring> psRegex, DevDrvInfo* pInfo, std::wstring strDriverName);
 int GetDrvStatusByName(std::wstring FriendlyName);
 
 BOOL ListDeviceInstancePath(char* strVer);
 int getCurMicVer(char* pOutVer, int nBufLen);
+
+std::string ws2s(const std::wstring& ws);
+BOOL GetDeviDriverInfo(std::wstring hwid, std::wstring& info);
+int PrintDevicesInfo();

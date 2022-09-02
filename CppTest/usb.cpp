@@ -8,6 +8,8 @@
 #include "usb.h"
 #include <locale.h>
 #include <initguid.h>
+#include <regex>
+#pragma comment(lib, "Cfgmgr32.lib")
 using namespace std;
 DEFINE_GUID(GUID_CLASS_I82930_MIC, 0x877fc334, 0xf128, 0x47f4, 0x90, 0x50, 0x7c, 0x3e, 0x78, 0x25, 0x95, 0x2b);
 
@@ -87,13 +89,16 @@ int dwGetCurDrvInfo(LPGUID pClsGuid, LPCTSTR lpEnumerator, TCHAR* psRegex[], int
             break;
         }
 
+        DWORD dwStat = CM_Get_DevNode_Status(&dwDevState, &dwProblem, DeviceInfoData.DevInst, 0);
+        printf("%d------hardid:[%s], dwDevState:[0x%0x], dwProblem:[0x%0x], nRet:%d\n", iIndex, ws2s(szHardWareID).c_str(), dwDevState, dwProblem, dwStat);
         if (!SetupDiGetDeviceRegistryProperty(hDevInfo, &DeviceInfoData, SPDRP_HARDWAREID,
             NULL, (PBYTE)szHardWareID, sizeof(szHardWareID) - 2, NULL))
         {
             iIndex++;
             continue;
         }
-
+        
+        
         /*for (int j = 0; j <= SPDRP_MAXIMUM_PROPERTY; j++)
         {
         TCHAR tsInfo[2048] = {0};
@@ -117,7 +122,7 @@ int dwGetCurDrvInfo(LPGUID pClsGuid, LPCTSTR lpEnumerator, TCHAR* psRegex[], int
                 printf("input hardware regex:[%s], get sys:[%s], DevVendor:[%d]\n",
                     ws2s(psRegex[i]).c_str(),
                     ws2s(szHardWareID).c_str(), i);
-                break;
+                //break;
             }
         }
 
@@ -139,7 +144,9 @@ int dwGetCurDrvInfo(LPGUID pClsGuid, LPCTSTR lpEnumerator, TCHAR* psRegex[], int
     m_curDrvInfo.uDrvDetectRet |= DEV_DETECT_TYPE_KNOWN;
     nRet = DEVICE_NORMAL;
 
-    if (CM_Get_DevNode_Status(&dwDevState, &dwProblem, DeviceInfoData.DevInst, 0) != CR_SUCCESS || dwProblem != 0)
+    DWORD dwStat = CM_Get_DevNode_Status(&dwDevState, &dwProblem, DeviceInfoData.DevInst, 0);
+    printf("------dwDevState:[0x%0x], dwProblem:[0x%0x], nRet:%d\n", dwDevState, dwProblem, dwStat);
+    if (dwStat != CR_SUCCESS || dwProblem != 0)
     {
         nRet = ERR_DEVICE_NEED_REPAIR;
         printf("abnormal dwDevState:[0x%0x], dwProblem:[0x%0x], nRet:%d\n", dwDevState, dwProblem, nRet);
@@ -206,11 +213,11 @@ param_err:
 int GetDrvStatusByName(std::wstring FriendlyName)
 {
     int nRet = 0;
-    LOG(INFO) << "SetDrvStatusByName Enter  strDesName:" << ws2s(FriendlyName);
+    cout << "SetDrvStatusByName Enter  strDesName:" << ws2s(FriendlyName) << std::endl;
     HDEVINFO hDevInfo = SetupDiGetClassDevs(NULL, NULL, NULL, DIGCF_ALLCLASSES | DIGCF_PRESENT);
     if (hDevInfo == INVALID_HANDLE_VALUE)
     {
-        LOG(ERROR) << "SetDrvStatusByName is Error";
+        cout << "SetDrvStatusByName is Error" << endl;
         return nRet;
     }
     int iIndex = 0;
@@ -227,16 +234,22 @@ int GetDrvStatusByName(std::wstring FriendlyName)
             continue;
         }
         std::wstring strDevDes = szDevDes;
+        wsmatch  matchResult;
+        wregex pattern(FriendlyName);
+        if (std::regex_match(strDevDes, matchResult, pattern))
+        {
+            printf("-----%s----\n", ws2s(strDevDes).c_str());
+        }
         if (strDevDes.find(FriendlyName) != std::wstring::npos)
         {
             nRet = 1;
-
-            break;
+            printf("%s\n", ws2s(strDevDes).c_str());
+            //break;
         }
         iIndex++;
     }
     SetupDiDestroyDeviceInfoList(hDevInfo);
-    LOG(INFO) << "SetDrvStatusByName End, isfind speaker=" << nRet;
+    cout << "SetDrvStatusByName End, isfind speaker=" << nRet << endl;
     return nRet;
 }
 
@@ -379,4 +392,464 @@ int getCurMicVer(char* pOutVer, int nBufLen)
     }
     printf("pOutVer:%s\n", pOutVer);
     return nRet;
+}
+
+int dwGetCurDrvInfo1(LPGUID pClsGuid, LPCTSTR lpEnumerator, std::vector<wstring> psRegex, DevDrvInfo* pInfo, std::wstring strDriverName)
+{
+    int nRet = ERR_DEVICE_NO_FOUND, iIndex = 0, i = 1;
+    DWORD dwProblem = 0, dwDevState = 0;
+    ULARGE_INTEGER DrvDate_Cur = { 0 };
+    ULARGE_INTEGER DrvDate_New = { 0 };
+    TCHAR szHardWareID[512] = { 0 };
+    SP_DEVINFO_DATA DeviceInfoData;
+    SP_DRVINFO_DATA DrvInfoData;
+    int uDevVendor = DEV_DETECT_UNKNOWN;
+    wstring wstrVer;
+    string strVer;
+    std::vector<wstring>::iterator it;
+    bool IsDisableable = false, IsDisabled = false;
+
+    if (psRegex.empty())
+    {
+        nRet = ERR_PARAM_ERROR;
+        LOG(ERROR) << "hardid psRegex is empty";
+        return 0;
+    }
+
+    HDEVINFO hDevInfo = SetupDiGetClassDevs(pClsGuid, lpEnumerator, NULL, DIGCF_ALLCLASSES | DIGCF_PRESENT);
+
+    if (hDevInfo == INVALID_HANDLE_VALUE)
+    {
+        LOG(ERROR) << "SetupDiGetClassDevs err, pClsGuid = " << (char*)pClsGuid;
+        nRet = ERR_PARAM_ERROR;
+        return 0;
+    }
+
+    while (DEV_DETECT_UNKNOWN == uDevVendor)
+    {
+        memset(szHardWareID, sizeof(szHardWareID), 0);
+        DeviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
+
+        if (!SetupDiEnumDeviceInfo(hDevInfo, iIndex, &DeviceInfoData))
+        {
+            LOG(ERROR) << "dwGetCurDrvInfo::SetupDiEnumDeviceInfo err GetLastError:[0x" << hex << GetLastError() << "]";
+            break;
+        }
+
+        if (!SetupDiGetDeviceRegistryProperty(hDevInfo, &DeviceInfoData, SPDRP_HARDWAREID,
+            NULL, (PBYTE)szHardWareID, sizeof(szHardWareID) - 2, NULL))
+        {
+            iIndex++;
+            continue;
+        }
+
+        for (it = psRegex.begin(); it != psRegex.end(); ++it, i++)
+        {
+            wstring wstrHardid = szHardWareID;
+            wregex pattern(*it);
+            wsmatch  matchResult;
+            printf("-----%s\n", ws2s(*it).c_str());
+            //LOG(INFO) << "szHardWareID:" << ws2s(szHardWareID).c_str();
+            //LOG(INFO) << "psRegex:" << SysUtil::ws2s(*it).c_str();
+            if (regex_match(wstrHardid, matchResult, pattern))
+            {
+                LOG(INFO) << "szHardWareID:" << ws2s(szHardWareID).c_str();
+                if (!strDriverName.empty())
+                {
+                    TCHAR szDesc[512] = { 0 };
+                    //SPDRP_DEVICEDESC
+                    if (SetupDiGetDeviceRegistryProperty(hDevInfo, &DeviceInfoData, SPDRP_FRIENDLYNAME,
+                        NULL, (PBYTE)szDesc, sizeof(szDesc) - 2, NULL))
+                    {
+                        wstring strDesc = szDesc;
+                        LOG(INFO) << "SPDRP_FRIENDLYNAME:" << ws2s(strDesc).c_str() << ",strDriverInf:" << ws2s(strDriverName).c_str();
+                        printf("\n");
+                        if (strDesc.find(strDriverName) != std::wstring::npos)
+                        {
+                            //该值没有实际意义，只是为了退出循环，暂时先固定为 DEV_TYPE_CAM_SW，后续去掉该值，防止误导
+                            //uDevVendor = 1;
+
+                            LOG(INFO) << "strDriverInf input hardware regex:[" << ws2s(*it).c_str()
+                                << "], get sys:[" << ws2s(szHardWareID).c_str()
+                                << "], DevVendor:[" << i << "]";
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        printf("not find\n");
+                    }
+                }
+                else
+                {
+                    uDevVendor = 1;
+                    LOG(INFO) << "input hardware regex:[" << ws2s(*it).c_str()
+                        << "], get sys:[" << ws2s(szHardWareID).c_str()
+                        << "], DevVendor:[" << i << "]";
+                    break;
+                }
+
+            }
+        }
+        iIndex++;
+    }
+}
+
+int dwGetCurDrvInfo2(LPGUID pClsGuid, LPCTSTR lpEnumerator, std::vector<wstring> psRegex, DevDrvInfo* pInfo, std::wstring strDriverName)
+{
+    int nRet = ERR_DEVICE_NO_FOUND, iIndex = 0, i = 1;
+    DWORD dwProblem = 0, dwDevState = 0;
+    ULARGE_INTEGER DrvDate_Cur = { 0 };
+    ULARGE_INTEGER DrvDate_New = { 0 };
+    TCHAR szHardWareID[512] = { 0 };
+    SP_DEVINFO_DATA DeviceInfoData;
+    SP_DRVINFO_DATA DrvInfoData;
+    int uDevVendor = DEV_DETECT_UNKNOWN;
+    wstring wstrVer;
+    string strVer;
+    std::vector<wstring>::iterator it;
+    bool IsDisableable = false, IsDisabled = false;
+
+    if (psRegex.empty())
+    {
+        nRet = ERR_PARAM_ERROR;
+        LOG(ERROR) << "hardid psRegex is empty";
+        return 0;
+    }
+
+    HDEVINFO hDevInfo = SetupDiGetClassDevs(pClsGuid, lpEnumerator, NULL, DIGCF_ALLCLASSES | DIGCF_PRESENT);
+
+    if (hDevInfo == INVALID_HANDLE_VALUE)
+    {
+        LOG(ERROR) << "SetupDiGetClassDevs err, pClsGuid = " << (char*)pClsGuid;
+        nRet = ERR_PARAM_ERROR;
+        return 0;
+    }
+
+    while (1)
+    {
+        memset(szHardWareID, sizeof(szHardWareID), 0);
+        DeviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
+
+        if (!SetupDiEnumDeviceInfo(hDevInfo, iIndex, &DeviceInfoData))
+        {
+            LOG(ERROR) << "dwGetCurDrvInfo::SetupDiEnumDeviceInfo err GetLastError:[0x" << hex << GetLastError() << "]";
+            break;
+        }
+
+        if (!SetupDiGetDeviceRegistryProperty(hDevInfo, &DeviceInfoData, SPDRP_HARDWAREID,
+            NULL, (PBYTE)szHardWareID, sizeof(szHardWareID) - 2, NULL))
+        {
+            iIndex++;
+            continue;
+        }
+
+        iIndex++;
+    }
+}
+
+std::wstring GetDevcieProperty(HDEVINFO Devs, PSP_DEVINFO_DATA DevInfo, DWORD Prop)
+{
+    std::wstring Buffer;
+
+    DWORD reqSize = 0;
+    DWORD dataType = 0;;
+
+    do
+    {
+        SetupDiGetDeviceRegistryProperty(Devs, DevInfo, Prop, &dataType, NULL, NULL, &reqSize);
+        if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+        {
+            break;
+        }
+
+        Buffer.resize(reqSize);
+        SetupDiGetDeviceRegistryProperty(Devs, DevInfo, Prop, &dataType, (LPBYTE)&Buffer.at(0), reqSize, &reqSize);
+
+    } while (0);
+
+    return Buffer;
+
+}
+
+BOOL GetDeviDriverInfo(wstring hwid, std::wstring& info)
+{
+    HDEVINFO devs = INVALID_HANDLE_VALUE;
+
+    do
+    {
+        //获取某类设备集合
+        devs = SetupDiGetClassDevsEx(NULL,
+            NULL,
+            NULL,
+            DIGCF_ALLCLASSES | DIGCF_PRESENT,
+            NULL,
+            NULL,
+            NULL);
+        if (devs == INVALID_HANDLE_VALUE)
+        {
+            break;
+        }
+
+
+        SP_DEVINFO_LIST_DETAIL_DATA devInfoListDetail;
+        devInfoListDetail.cbSize = sizeof(devInfoListDetail);
+        if (!SetupDiGetDeviceInfoListDetail(devs, &devInfoListDetail))
+        {
+            break;
+        }
+
+        SP_DEVINFO_DATA devInfo;
+        devInfo.cbSize = sizeof(devInfo);
+        for (DWORD devIndex = 0; SetupDiEnumDeviceInfo(devs, devIndex, &devInfo); devIndex++)
+        {
+            //获取硬件ID
+            std::wstring HardId = GetDevcieProperty(devs, &devInfo, SPDRP_HARDWAREID);
+            if (HardId.empty())
+            {
+                continue;
+            }
+            printf("%d %ws\n", devIndex, HardId.c_str());
+            if (HardId.find(hwid) != std::wstring::npos)
+            {
+                printf("%d %ws\n", devIndex, HardId.c_str());
+                printf("---------------\n\n\n");
+                //break;
+                SP_DEVINSTALL_PARAMS deviceInstallParams;
+                {
+                    HKEY hKey = SetupDiOpenDevRegKey(devs, &devInfo,
+                        DICS_FLAG_GLOBAL,
+                        0,
+                        DIREG_DRV,
+                        KEY_READ);
+                    if (hKey == INVALID_HANDLE_VALUE)
+                    {
+                        RegCloseKey(hKey);
+                        return FALSE;
+                    }
+
+                    TCHAR buff[512] = { 0 };
+                    DWORD RegDataType;
+                    DWORD RegDataLength = sizeof(buff); // bytes!!!
+                    long regerr = RegQueryValueEx(hKey,
+                        TEXT("InfPath"),
+                        NULL,
+                        &RegDataType,
+                        (PBYTE)buff,
+                        &RegDataLength
+                    );
+                    if ((regerr != ERROR_SUCCESS) || (RegDataType != REG_SZ))
+                    {
+                        RegCloseKey(hKey);
+                        return FALSE;
+                    }
+                    printf("InfPath:%S\n", buff);
+                    info = buff;
+
+                    RegDataLength = sizeof(buff);
+                    regerr = RegQueryValueEx(hKey,
+                        TEXT("DriverDesc"),
+                        NULL,
+                        &RegDataType,
+                        (PBYTE)buff,
+                        &RegDataLength
+                    );
+                    if ((regerr != ERROR_SUCCESS) || (RegDataType != REG_SZ))
+                    {
+                        RegCloseKey(hKey);
+                        return FALSE;
+                    }
+                    printf("DriverDesc:%S\n", buff);
+
+                    RegDataLength = sizeof(buff);
+                    regerr = RegQueryValueEx(hKey,
+                        TEXT("DriverDate"),
+                        NULL,
+                        &RegDataType,
+                        (PBYTE)buff,
+                        &RegDataLength
+                    );
+                    if ((regerr != ERROR_SUCCESS) || (RegDataType != REG_SZ))
+                    {
+                        RegCloseKey(hKey);
+                        return FALSE;
+                    }
+                    printf("DriverDate:%S\n", buff);
+
+                    RegDataLength = sizeof(buff);
+                    regerr = RegQueryValueEx(hKey,
+                        TEXT("DriverVersion"),
+                        NULL,
+                        &RegDataType,
+                        (PBYTE)buff,
+                        &RegDataLength
+                    );
+                    if ((regerr != ERROR_SUCCESS) || (RegDataType != REG_SZ))
+                    {
+                        RegCloseKey(hKey);
+                        return FALSE;
+                    }
+                    printf("DriverVersion:%S\n", buff);
+                    RegCloseKey(hKey);
+                }
+
+
+                //ZeroMemory(&deviceInstallParams, sizeof(deviceInstallParams));
+                //deviceInstallParams.cbSize = sizeof(SP_DEVINSTALL_PARAMS);
+                //if (!SetupDiGetDeviceInstallParams(devs, &devInfo, &deviceInstallParams))
+                //{
+                //	break;
+                //}
+                //deviceInstallParams.FlagsEx |= DI_FLAGSEX_ALLOWEXCLUDEDDRVS;
+                //if (!SetupDiSetDeviceInstallParams(devs, &devInfo, &deviceInstallParams))
+                //{
+                //	break;
+                //}
+
+                //if (SetupDiBuildDriverInfoList(devs, &devInfo, SPDIT_COMPATDRIVER))
+                //{
+                //	ULONG index = 0;
+                //	SP_DRVINFO_DATA driverInfoData;
+                //	ZeroMemory(&driverInfoData, sizeof(driverInfoData));
+                //	driverInfoData.cbSize = sizeof(SP_DRVINFO_DATA);
+                //	while (SetupDiEnumDriverInfo(devs, &devInfo, SPDIT_COMPATDRIVER, index, &driverInfoData))
+                //	{
+                //		SP_DRVINFO_DETAIL_DATA driverInfoDetail;
+                //		driverInfoDetail.cbSize = sizeof(SP_DRVINFO_DETAIL_DATA);
+                //		if (SetupDiGetDriverInfoDetail(devs, &devInfo, &driverInfoData, &driverInfoDetail, sizeof(SP_DRVINFO_DETAIL_DATA), NULL))
+                //		{
+                //			index = index;
+                //		}
+                //		printf("driverInfoData.ProviderName:%S\n", driverInfoData.ProviderName);
+                //		printf("driverInfoData.MfgName:%S\n", driverInfoData.MfgName);
+                //		printf("driverInfoDetail.InfFileName:%S\n", driverInfoDetail.InfFileName);
+
+                //		SYSTEMTIME SystemTime;
+                //		if (FileTimeToSystemTime(&driverInfoData.DriverDate, &SystemTime)) 
+                //		{
+                //			TCHAR Buffer[MAX_PATH];
+                //			if (GetDateFormat(LOCALE_USER_DEFAULT,
+                //				DATE_SHORTDATE,
+                //				&SystemTime,
+                //				NULL,
+                //				Buffer,
+                //				sizeof(Buffer) / sizeof(TCHAR)
+                //			) != 0) 
+                //			{
+                //				printf("driverInfoData.DriverDate:%S\n", Buffer);
+                //			}
+                //		}
+                //		ULARGE_INTEGER Version;
+                //		Version.QuadPart = driverInfoData.DriverVersion;
+                //		printf("Version:%d.%d.%d.%d\n",
+                //			HIWORD(Version.HighPart),
+                //			LOWORD(Version.HighPart),
+                //			HIWORD(Version.LowPart),
+                //			LOWORD(Version.LowPart)
+                //		);
+                //		DWORD e = GetLastError();
+                //		e = e;
+                //		index++;
+                //	}
+                //}
+
+
+            }
+        }
+
+    } while (0);
+
+    if (devs != INVALID_HANDLE_VALUE)
+    {
+        SetupDiDestroyDeviceInfoList(devs);
+    }
+
+    return TRUE;
+}
+#include <Devpkey.h>
+int PrintDevicesInfo()
+{
+    // 得到所有设备 HDEVINFO    
+    HDEVINFO hDevInfo;
+    hDevInfo = SetupDiGetClassDevs(NULL, 0, 0, DIGCF_PRESENT | DIGCF_ALLCLASSES);
+    if (hDevInfo == INVALID_HANDLE_VALUE)
+    {
+        wprintf(L"SetupDiGetClassDevs Err:%d", GetLastError());
+        return -1;
+    };
+
+    // 循环列举   
+    SP_DEVINFO_DATA DeviceInfoData;
+    DeviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
+    for (DWORD i = 0; SetupDiEnumDeviceInfo(hDevInfo, i, &DeviceInfoData); i++)
+    {
+        wstring hardid;
+        WCHAR   szHardID[MAX_PATH] = { 0 };
+        WCHAR   szClassBuf[MAX_PATH] = { 0 };
+        WCHAR   szDescBuf[MAX_PATH] = { 0 };
+        WCHAR   locinfo[MAX_PATH] = { 0 };
+        WCHAR   friendName[MAX_PATH] = { 0 };
+        if (SetupDiGetDeviceRegistryProperty(hDevInfo, &DeviceInfoData, SPDRP_HARDWAREID, NULL, (PBYTE)szHardID, MAX_PATH - 1, NULL))
+        {
+            //printf("hardid:%s\n", ws2s(szClassBuf).c_str());
+            hardid = szHardID;
+        }
+        // 获取类名  
+        if (SetupDiGetDeviceRegistryProperty(hDevInfo, &DeviceInfoData, SPDRP_CLASS, NULL, (PBYTE)szClassBuf, MAX_PATH - 1, NULL))
+        {
+            //printf("Class:%s\n", ws2s(szClassBuf).c_str());
+        }
+        //获取设备描述信息
+        if (SetupDiGetDeviceRegistryProperty(hDevInfo, &DeviceInfoData, SPDRP_DEVICEDESC, NULL, (PBYTE)szDescBuf, MAX_PATH - 1, NULL))
+        {
+            //printf("nDesc:%s\n", ws2s(szDescBuf).c_str());
+        }
+        if (SetupDiGetDeviceRegistryProperty(hDevInfo, &DeviceInfoData, SPDRP_LOCATION_INFORMATION, NULL, (PBYTE)locinfo, sizeof(locinfo), NULL))
+        {
+            //printf("locinfo:%s\n", ws2s(locinfo).c_str());
+        }
+        if (SetupDiGetDeviceRegistryProperty(hDevInfo, &DeviceInfoData, SPDRP_FRIENDLYNAME, NULL, (PBYTE)friendName, sizeof(friendName), NULL))
+        {
+            //printf("friendName:%s\n", ws2s(friendName).c_str());
+        }
+
+        if (hardid.find(L"USB\\VID_351E&PID_00C9") != std::wstring::npos)
+        {
+            WCHAR bufferHardID[MAX_PATH] = { 0 };
+            DEVPROPTYPE HardIDtype;
+            ULONG HardIDLen = 0;
+            CM_Get_DevNode_Property(DeviceInfoData.DevInst,
+                &DEVPKEY_Device_HardwareIds,
+                &HardIDtype, nullptr, &HardIDLen, 0);
+
+            CONFIGRET cRet1 = CM_Get_DevNode_Property(DeviceInfoData.DevInst,
+                &DEVPKEY_Device_HardwareIds,
+                &HardIDtype, (PBYTE)bufferHardID, &HardIDLen, 0);
+
+            printf("cRet:%d, code:%d, hardid:%s\n", cRet1, HardIDtype, ws2s(bufferHardID).c_str());
+            ULONG code = 0;
+            DEVPROPTYPE CODE = 0;
+            ULONG Len = sizeof(DEVPKEY_Device_ProblemCode);
+            CONFIGRET cRet = CM_Get_DevNode_Property(DeviceInfoData.DevInst,
+                &DEVPKEY_Device_ProblemCode,
+                &CODE, (PBYTE)&code, &Len, 0);
+            
+            printf("cRet:%d, code:%d, ProblemCode=%d\n", cRet, CODE, code);
+
+            wchar_t DeviceDesc[MAX_PATH] = { 0 };
+            DEVPROPTYPE CODE1 = 0;
+            ULONG Len1 = sizeof(DEVPKEY_Device_DeviceDesc);
+            CM_Get_DevNode_Property(DeviceInfoData.DevInst,
+                &DEVPKEY_Device_DeviceDesc,
+                &CODE1, (PBYTE)DeviceDesc, &Len1, 0);
+            printf("code:%d, DeviceDesc=%s\n", CODE1, ws2s(DeviceDesc).c_str());
+
+            printf("%d---------------------------------------\n", i);
+        }
+        
+    }
+
+    //  释放     
+    SetupDiDestroyDeviceInfoList(hDevInfo);
+    return 0;
 }

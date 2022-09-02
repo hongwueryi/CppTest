@@ -292,9 +292,145 @@ CString GetFileVerInfo(LPCTSTR  strFilePath, LPCTSTR pszType)
     return szVersion;
 }
 
+const GUID DtenMicClassGuid = { 0xC166523CL, 0xFE0C, 0x4A94,	{ 0xA5, 0x86, 0xF1, 0xA8, 0x0C, 0xFB, 0xBF, 0x3E } };
+#include <regex>
+#include <unordered_map>
+#include <deque>
+typedef struct _mmregdata {
+    uint32_t addr;
+    uint32_t data;
+}MMRegData;
+
+typedef struct _mmregdataex {
+    uint32_t addr;
+    uint32_t data[2];
+}MMRegDataEx;
+
+#include <future>
+
 
 int main()
 {
+    PrintDevicesInfo();
+#if 0
+    //驱动安装和卸载
+    int nRet = 0;
+    char szParam[1024] = { 0 };
+    sprintf_s(szParam, 1024 - 1, "%s %s", "C:\\DTEN\\HardWare\\Driver\\devcon64.exe", "rescan");
+    //nRet = system(szParam);
+    //Sleep(1500);
+    //wstring haid = L"USB\\VID_2D95&PID_6002&REV_0409";
+    wstring haid = L"USB\\VID_351E&PID_00C9";
+    wstring infoo;
+    GetDeviDriverInfo(haid, infoo);
+    char uninstall[MAX_PATH] = { 0 };
+    sprintf_s(uninstall, "pnputil /delete-driver %s /uninstall /force", ws2s(infoo).c_str());
+    printf("cmd=%s\n", uninstall);
+    int isys = system(uninstall);
+    printf("uninstall down. isys=%d", isys);
+
+    string infpath = "C:\\DTEN\\HardWare\\Driver\\dtensmart\\MutCamera.inf";
+    char install[MAX_PATH] = { 0 };
+    sprintf_s(install, "pnputil /add-driver %s /install", infpath.c_str());
+    printf("cmd=%s\n", install);
+    isys = system(install);
+    printf("install down. isys=%d", isys);
+#endif
+#if 0
+    string result;
+    std::thread tlab([&result]() {
+        Sleep(2000);
+        result = "test2";
+        int n = 0;
+        });
+    Sleep(3000);
+    tlab.detach();
+    MMRegDataEx _24_149Ghz = { 0x000099, 0x24B77333, 0x34B77333 };
+    printf("0x%08x,0x%08x,0x%08x\n", _24_149Ghz.addr, _24_149Ghz.data[0], _24_149Ghz.data[1]);
+    std::vector<MMRegData>vMMReg;
+    vMMReg.push_back({ 0x00001F, 0x00000000 });
+    vMMReg.push_back({ 0x00001E, 0x00000200 });
+    vMMReg.push_back({ 0x000015, 0x11110100 });
+    vMMReg.push_back({ 0x000016, 0x01000000 });
+    vMMReg.push_back({ 0x000017, 0x00000000 });
+    vMMReg.push_back({ 0x000018, 0x73100000 });
+    vMMReg.push_back({ 0x000019, 0x73100000 });
+    vMMReg.push_back({ 0x00003D, 0x00000000 });
+    vMMReg.push_back({ 0x00003E, 0x00000000 });
+    vMMReg.push_back({ 0x00003F, 0x00000000 });
+    vMMReg.push_back({ 0x000040, 0x00000000 });
+    vMMReg.push_back({ 0x000041, 0xFFFFFFF0 });
+    vMMReg.push_back({ 0x000042, 0xFFFFFE2F });
+    vMMReg.push_back({ 0x000043, 0xFFFFFFA4 });
+    vMMReg.push_back({ 0x000002, 0x7FFD0000 });
+    vMMReg.push_back({ 0x000003, 0x11111111 });
+    vMMReg.push_back({ 0x000004, 0x0000FF87 });
+    vMMReg.push_back({ 0x000032, 0x00000003 });
+    vMMReg.push_back({ 0x000033, 0x22333333 });
+    vMMReg.push_back({ 0x000034, 0x33322900 });
+    vMMReg.push_back({ 0x000035, 0x03000030 });
+    vMMReg.push_back({ 0x00001A, 0x13130000 });
+    vMMReg.push_back({ 0x00001B, 0x03062000 });
+    vMMReg.push_back({ 0x00001C, 0x0C0C8100 });
+    vMMReg.push_back({ 0x00001D, 0xA0110500 });
+    vMMReg.push_back({ 0x000020, 0x00011414 });
+    vMMReg.push_back({ 0x00003B, 0x0000400C });
+    vMMReg.push_back({ 0x00003C, 0x0000FF00 });
+    vMMReg.push_back({ 0x000021, 0x00001000 });
+    vMMReg.push_back({ 0x000022, 0x00010088 });
+    vMMReg.push_back({ 0x000026, 0x00010088 });
+    vMMReg.push_back({ 0x00002A, 0x00010088 });
+    vMMReg.push_back({ 0x00002E, 0x00010088 });
+    vMMReg.push_back({ 0x000021, 0x00010088 });
+    vMMReg.push_back({ 0x00009B, 0x011FFE44 });
+    vMMReg.push_back({ 0x0000B4, 0xFFFFFFFF });
+    vMMReg.push_back({ 0x0000B5, 0xFFFFFFFF });
+    vMMReg.push_back({ 0x0000AF, 0x00000001 });
+    vMMReg.push_back({ 0x0000B5, 0x7FFFFFFF });
+    vMMReg.push_back({ 0x0000AE, 0x0000040F });
+    vMMReg.push_back({ 0x0000AF, 0x00007801 });
+    vMMReg.push_back({ 0x0000B5, 0xFFFFFFFF });
+    vMMReg.push_back({ 0x000005, 0x58885888 });
+    vMMReg.push_back({ 0x000006, 0x00080000 });
+    vMMReg.push_back({ 0x000007, 0x00002880 });
+    vMMReg.push_back({ 0x000008, 0x00040647 });
+    vMMReg.push_back({ 0x000009, 0x04000000 });
+    vMMReg.push_back({ 0x00000A, 0x33005500 });
+    vMMReg.push_back({ 0x00000B, 0x00031300 });
+    vMMReg.push_back({ 0x00000C, 0x42500000 });
+    vMMReg.push_back({ 0x00000D, 0x00000000 });
+    vMMReg.push_back({ 0x00000E, 0x00002880 });
+    vMMReg.push_back({ 0x00000F, 0x00040647 });
+    vMMReg.push_back({ 0x000010, 0x04000000 });
+    vMMReg.push_back({ 0x000011, 0x33005500 });
+    vMMReg.push_back({ 0x000012, 0x00031300 });
+    vMMReg.push_back({ 0x000013, 0x42500000 });
+    vMMReg.push_back({ 0x000014, 0x00000000 });
+    vMMReg.push_back({ 0x000000, 0x00131111 });
+    vMMReg.push_back({ 0x000001, 0x00131111 });
+   
+    std::vector<MMRegData>::iterator it;
+    for (it = vMMReg.begin(); it != vMMReg.end(); ++it)
+    {
+        uint32_t addr = it->addr;
+        uint32_t data = it->data;
+    }
+   
+   /* std::wstring strDevDes = L"1-MicrophoneDTEN Mic d7)";
+    wsmatch  matchResult;
+    wregex pattern(L".*Microphone.*DTEN Mic.*");
+    if (std::regex_match(strDevDes, matchResult, pattern))
+    {
+        printf("---------\n");
+    }*/
+    std::vector<wstring> vecMicNode1;
+    vecMicNode1.push_back(L"MMDEVAPI\\AudioEndpoints");
+    dwGetCurDrvInfo1(NULL, NULL, vecMicNode1, nullptr, L"test12323213");
+    GetDrvStatusByName(L".*Microphone.*DTEN Mic.*");
+    //GetDrvStatusByName(L".*DTEN Board.*");
+    
+#endif
+#if 0
     uint8_t newVer[10] = { 0 };
     string strVer = "1.1.20";
     char* token = strtok((char*)strVer.c_str(), ".");
@@ -318,7 +454,9 @@ int main()
         char szCur[MAX_PATH] = { 0 };
         getCurMicVer(szCur, MAX_PATH);
     }
-#if 1
+#endif
+
+#if 0
     CString vers = GetFileVerInfo(
         L"C:\\DTEN\\DTENServices\\DTENServices.exe", L"FileVersion");
     int nn = 0;
@@ -326,7 +464,7 @@ int main()
 #if 0
     TCHAR* arrSpeakerHard2[1] = { _T("USB\\\\VID_351E&PID_00CD&REV_.{4}")};
     DevDrvInfo drvInfoD = { 0 };
-    int nRetCD = dwGetCurDrvInfo((LPGUID)&SubCamClassGuid, _T("USB"), arrSpeakerHard2, 1, &drvInfoD);
+    int nRetCD = dwGetCurDrvInfo(nullptr, nullptr, arrSpeakerHard2, 1, &drvInfoD);
 #endif
 #if 0
     string strVer = "1.9.8b";

@@ -420,9 +420,98 @@ void GetTPHardidandInf()
     }
 }
 
+void GetCamInfInfo()
+{
+    std::vector<NODE_ATTRIBUTE_DEVICE_EX> vec;
+    CXmlManager::GetInstance().GetNodeAttribute("SETUPDRIVERS", "CAM", vec);
+    return;
+}
+
+bool GainDeviceInfo(std::string result)
+{
+    if (result.size() <= 0)
+    {
+        
+        return false;
+    }
+   
+    if (result.find("-") == std::string::npos)
+    {
+        
+        return false;
+    }
+    std::string device;
+    int devicePos = result.find("-");
+    for (size_t i = 0; i < devicePos; i++)
+    {
+        if (result[i] != '-')
+        {
+            device.push_back(result[i]);
+        }
+    }
+    if (device.size() > 0)
+    {
+        int num = 0;
+    }
+    std::string deviceType;
+    size_t deviceTypePos = result.find("-", devicePos + 1);
+    if (deviceTypePos == std::string::npos)
+    {
+        
+        return false;
+    }
+    for (size_t j = devicePos + 1; j < deviceTypePos; j++)
+    {
+        if (result[j] != '-')
+        {
+            deviceType.push_back(result[j]);
+        }
+    }
+    if (deviceType.size() > 0)
+    {
+        int num = 0;
+    }
+    
+    return true;
+}
+#include 
 int main()
 {
-    GetTPHardidandInf();
+    string strZoomx861 = "C:\\Program Files(x86)\\a.exe";
+    if (PathFileExistsA(strZoomx861.c_str()))
+    {
+       
+    }
+    if (GetFileAttributesA(strZoomx861.c_str()) != INVALID_FILE_ATTRIBUTES)
+    {
+        
+    }
+    string strZoomx641 = "C:\\Program Files\\DTENOTA.exe";
+    if (PathFileExistsA(strZoomx641.c_str()))
+    {
+       
+    }
+    GainDeviceInfo("1-2-3-4-5");
+    system("pause");
+    return 0;
+#if 0
+    wstring wst = L"123";
+    wstring GRANDPNODE;
+    CXmlManager::GetInstance().GetNodeAttribute("CHECKDEVICE", "MIC", "MIC_NODE_3", "GRANDPNODE", GRANDPNODE);
+    vector<string> vTPNodeName;
+    vector<string>::iterator itTP;
+    CXmlManager::GetInstance().GetAllNodeName("SETUPFIRMWARE", "TOUCH", vTPNodeName);
+    for (itTP = vTPNodeName.begin(); itTP != vTPNodeName.end(); ++itTP)
+    {
+        string temp = *itTP;
+        NODE_ATTRIBUTE_FIRMWARE attr;
+        CXmlManager::GetInstance().GetNodeAttribute("SETUPFIRMWARE", "TOUCH", temp.c_str(), attr);
+        string type = attr.type;
+    }
+
+#endif
+    //GetCamInfInfo();
+    //GetTPHardidandInf();
 #if 0
     wstring wsmame;
     CXmlManager::GetInstance().GetNodeAttribute("SETUPDRIVERS", "CAM", "D7PRO", "name", wsmame);

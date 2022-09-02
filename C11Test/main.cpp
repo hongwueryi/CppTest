@@ -4,7 +4,12 @@
 #include <thread>
 #include <future>
 #include <memory>
+#include <condition_variable>
 using namespace std::chrono;
+std::mutex g_mutex;
+
+std::condition_variable_any condition1;
+std::condition_variable_any condition2;
 
 std::string fetchDataFromDB(std::string recvData) {
 	//确保函数要5秒才能执行完成
@@ -424,9 +429,9 @@ int main11()
 	tRead.join();
 	tWrite.join();
 #endif
-#if 0
+#if 1
 	std::promise<std::string> promise;
-
+	
 	std::future<std::string> result = promise.get_future();
 	std::thread t(print, std::ref(promise));
 	do_other_things();
@@ -481,7 +486,7 @@ int main()
 	uint64_t dspan = time_span.count();  //seconds
 	
 
-
+#if 0
 	std::lock(tlock1_mux, tlock2_mux);
 	std::thread tLock1(tLock1Proc);
 	std::thread tLock2(tLock2Proc);
@@ -491,7 +496,7 @@ int main()
 	std::lock_guard<std::recursive_mutex>lguard(g_recursive_mux);
 	printf("main...\n");
 	lock_guard_test(5);  //如果使用std::mutex 而非std::recursive_mutex就会出现死锁，抛出异常
-
+#endif
 #if 0
 	_tagNode node;
 	//std::thread t(&_tagNode::do_some_work, &node, 1);  等同下一句
@@ -592,7 +597,40 @@ int main()
 	if (t.joinable())
 		t.join();
 #endif
-
-	system("pause");
+	
+	std::thread thread1([]() {
+		while (1)
+		{
+			printf("run thread1\n");
+			std::unique_lock<std::mutex> locker(g_mutex);
+			printf("run lock thread1\n");
+			condition1.wait(locker);
+			printf("threa1 exec...\n");
+			//std::this_thread::sleep_for(std::chrono::seconds(2));
+			condition2.notify_one();
+		}
+		});
+	
+	std::thread thread2([]() {
+		while (1)
+		{
+			printf("run thread2\n");
+			std::unique_lock<std::mutex> locker(g_mutex);
+			printf("run lock thread2\n");
+			condition2.wait(locker);
+			printf("threa2 exec...\n");
+			//std::this_thread::sleep_for(std::chrono::seconds(3));
+			condition1.notify_one();
+		}
+		});
+	thread1.join();
+	thread2.join();
+	Sleep(1000);
+	condition1.notify_one();
+	//system("pause");
+	while (1)
+	{
+		Sleep(1000);
+	}
 	return  0;
 }
