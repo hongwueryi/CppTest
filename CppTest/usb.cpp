@@ -813,7 +813,10 @@ int PrintDevicesInfo()
             //printf("friendName:%s\n", ws2s(friendName).c_str());
         }
 
-        if (hardid.find(L"USB\\VID_351E&PID_00C9") != std::wstring::npos)
+        bool test = true;
+        if (hardid.find(L"USB\\VID_351E&PID_00C9") != std::wstring::npos ||
+            hardid.find(L"USB\\VID_1D6B&PID_0100") != std::wstring::npos ||
+            test)
         {
             WCHAR bufferHardID[MAX_PATH] = { 0 };
             DEVPROPTYPE HardIDtype;

@@ -9,6 +9,8 @@
 #include <tchar.h>
 #include "udpprxoy.h"
 #include <sstream>
+#include "tcpprxoy.h"
+
 
 using namespace std;
 
@@ -308,10 +310,121 @@ typedef struct _mmregdataex {
 
 #include <future>
 
+void dura(bool br)
+{
+    static bool bNeedRestart = false;
+    static UINT64 dwStart = GetTickCount64();
+    if (br)
+    {
+        if (bNeedRestart)
+        {
+            dwStart = GetTickCount64();
+            bNeedRestart = false;
+        }
+        UINT64 duration = GetTickCount64() - dwStart;
+        if (duration >= 30000)
+        {
+            
+            printf("min keep idle statu, arrive standby.\n");
+
+        }
+    }
+    else
+    {
+        bNeedRestart = true;
+    }
+}
+#include <regex>
+typedef struct
+{
+    unsigned char uCommand;					//请求指令
+    unsigned char uMultiPackage : 1;		//是否拆分多包， 0-单包， 1-多包
+    unsigned char uPackMark : 1;			//多包数据标志位， 默认单包0,   末尾包1
+    unsigned char uStatus : 1;				//请求or响应	0-请求	1-响应
+    unsigned char uDataLen : 5;				//有效数据长度,最大长度为24
+    unsigned char uData[32];	//自定义数据，当拆分多包时，uData[0]为包序号，00~FF
+} DTEN_UART_DATA_, * PDTEN_UART_DATA;
+
+typedef union
+{
+    unsigned char uCommandData[32];
+    unsigned char uUpgradeCmdData[32];
+    DTEN_UART_DATA_ mUartCommandData;
+    UCHAR uUpgradeDataLen;
+} UDEV_COMM_DATA, * PUDEV_COMM_DATA;
 
 int main()
 {
-    PrintDevicesInfo();
+#if 0
+    UDEV_COMM_DATA mSenderData = { 0 };
+    DTEN_UART_DATA_ data;
+    data.uCommand = 0x31;
+    data.uDataLen = 9;
+    mSenderData.mUartCommandData = data;
+    memcpy(mSenderData.uUpgradeCmdData, "1234567890abcdef", 15);
+    
+    printf("%d,%s\n", mSenderData.mUartCommandData.uDataLen, mSenderData.uUpgradeCmdData);
+
+#endif
+
+#if 0
+    int itype = 0;
+    printf("please input 0-8\n");
+    scanf_s("%d", &itype);
+    char buffer[MAX_PATH] = { 0 };
+    DWORD namelen = MAX_PATH;
+    BOOL bret =  GetComputerNameExA((COMPUTER_NAME_FORMAT)itype, buffer, &namelen);
+    //BOOL bret = GetComputerNameA(nullptr, &namelen);
+    //BOOL bret = GetComputerNameA(buffer, &namelen);
+    char namebuffer[MAX_PATH] = { 0 };  //ComputerNamePhysicalDnsHostname
+    sprintf(namebuffer, "%d%s", itype, "-G3-DTEN-0123456789ABCDEFGHIGKLMNOPQRSTUVWXYZ");
+    bret = SetComputerNameExA((COMPUTER_NAME_FORMAT)itype, namebuffer);//SetComputerNameA("test_dten");
+    
+    printf("%d-name:%s, len:%d\n", GetLastError(), buffer, namelen);
+    //\\s(\d{ 2 }) :(\d{ 2 })
+    string ws = "^\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}$";
+    std::regex pattern(ws);
+    std::smatch  matchResult;
+    std::string ontime = "202-09-00 08:02"; // 
+    //LOG(INFO) << "szHardWareID:" << SysUtil::ws2s(szHardWareID).c_str();
+    //LOG(INFO) << "psRegex:" << SysUtil::ws2s(*it).c_str();
+    if (std::regex_match(ontime, matchResult, pattern))
+    {
+        printf("ok!");
+    }
+#endif
+#if 0
+    dura(0);
+    Sleep(1000);
+    dura(1);
+    Sleep(1000);
+    dura(0);
+    Sleep(10000);
+    dura(1);
+    Sleep(10000);
+    dura(1);
+    Sleep(20000);
+    dura(1);
+    SYSTEMTIME syst;
+    GetLocalTime(&syst);
+    char buffer[32] = { 0 };
+    sprintf(buffer, "%04d-%02d-%02d %02d:%02d", syst.wYear, syst.wMonth, syst.wDay, syst.wHour, syst.wMinute);
+    string strCurTime = buffer;
+
+    string offtime = "2022-09-16 16:00";
+    string onTime = "2022-09-17 08:00";
+    if (strcmp(strCurTime.c_str(), offtime.c_str()) >= 0 && strcmp(strCurTime.c_str(), onTime.c_str()) == -1)
+    {
+        printf("right time\n");
+    }
+    string onTime_day = onTime.substr(8, 2);
+    string onTime_Hour = onTime.substr(11, 2);
+    string onTime_Min = onTime.substr(14, 2);
+    char param[32] = { 0 };
+    sprintf_s(param, "2 %d %d %d 0", atoi(onTime_day.c_str()), atoi(onTime_Hour.c_str()), atoi(onTime_Min.c_str()));
+    
+#endif
+    //PrintDevicesInfo();
 #if 0
     //驱动安装和卸载
     int nRet = 0;
@@ -690,8 +803,10 @@ int main()
 	//EnumWindowStations(WorkStationEnum, 0);
 	//EnumDesktops(NULL, DeskEnum, 0);
 	//Socket_udp_test();
-#if 0
-	CUDPCnt::GetInstance()->run(callback_parse_udp_data);
+#if 1
+	//CUDPCnt::GetInstance()->run(callback_parse_udp_data);
+    //CTCPCnt::GetInstance()->run(callback_parse_udp_data);
+    CTCPCnt::GetInstance()->SendData(56336, (void*)"123", 3);
 #endif
 #if 0
     string sql = "UPDATE HEALTHCHECKCATEGORY_TRACKING SET ErrorId = '%s' WHERE errorId like '%s%%'";
