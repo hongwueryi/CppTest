@@ -10,9 +10,93 @@
 #include "udpprxoy.h"
 #include <sstream>
 #include "tcpprxoy.h"
-
+#include <mutex>
+std::mutex g_testmu;
+int g_num = 0;
+std::vector<int> vi;
 
 using namespace std;
+char* pBuf = nullptr;
+
+BOOL EnablePrivilege()
+{
+    LUID PrivilegeRequired;
+    DWORD dwLen = 0, iCount = 0;
+    BOOL bRes = FALSE;
+    HANDLE hToken = NULL;
+    BYTE* pBuffer = NULL;
+    TOKEN_PRIVILEGES* pPrivs = NULL;
+
+    bRes = LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &PrivilegeRequired);
+    if (!bRes) return FALSE;
+
+    bRes = OpenThreadToken(GetCurrentThread(), TOKEN_QUERY | TOKEN_ADJUST_PRIVILEGES, TRUE, &hToken);
+    if (!bRes)
+    {
+        printf("%d\n", GetLastError());
+        return FALSE;
+    }
+
+    bRes = GetTokenInformation(hToken, TokenPrivileges, NULL, 0, &dwLen);
+    if (TRUE == bRes)
+    {
+        CloseHandle(hToken);
+        return FALSE;
+    }
+    pBuffer = (BYTE*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, dwLen);
+    if (NULL == pBuffer) return FALSE;
+
+    if (!GetTokenInformation(hToken, TokenPrivileges, pBuffer, dwLen, &dwLen))
+    {
+        CloseHandle(hToken);
+        HeapFree(GetProcessHeap(), 0, pBuffer);
+        return FALSE;
+    }
+
+    // Iterate through all the privileges and enable the one required
+    bRes = FALSE;
+    pPrivs = (TOKEN_PRIVILEGES*)pBuffer;
+    for (iCount = 0; iCount < pPrivs->PrivilegeCount; iCount++)
+    {
+        if (pPrivs->Privileges[iCount].Luid.LowPart == PrivilegeRequired.LowPart &&
+            pPrivs->Privileges[iCount].Luid.HighPart == PrivilegeRequired.HighPart)
+        {
+            pPrivs->Privileges[iCount].Attributes |= SE_PRIVILEGE_ENABLED;
+            // here it's found
+            bRes = AdjustTokenPrivileges(hToken, FALSE, pPrivs, dwLen, NULL, NULL);
+            break;
+        }
+    }
+
+    CloseHandle(hToken);
+    HeapFree(GetProcessHeap(), 0, pBuffer);
+    return bRes;
+}
+
+std::vector<std::string> util_strsplit2(const std::string& str, const char c)
+{
+    //类似与Pyhon的 , string.split("c")
+    std::vector<std::string> v;								//输入 string  "a*b**c****d******e***********f"
+    //输出 vector  ('a','b','c','d','e','f');
+
+    // Skip delimiters at beginning.
+    std::string::size_type lastPos = str.find_first_not_of(c, 0);
+    // Find first "non-delimiter".
+    std::string::size_type pos = str.find_first_of(c, lastPos);
+
+    while (std::string::npos != pos || std::string::npos != lastPos)
+    {
+        // Found a token, add it to the vector.
+        v.push_back(str.substr(lastPos, pos - lastPos));
+        // Skip delimiters.  Note the "not_of"
+        lastPos = str.find_first_not_of(c, pos);
+        // Find next "non-delimiter"
+        pos = str.find_first_of(c, lastPos);
+    }
+
+    return v;
+
+}
 
 BOOL ModifyRegMultiSZ(LPCWSTR lpKeyPath, LPCWSTR lpItem, LPCTSTR dwValue, int len)
 {
@@ -362,7 +446,7 @@ int main()
     data.uDataLen = 9;
     mSenderData.mUartCommandData = data;
     memcpy(mSenderData.uUpgradeCmdData, "1234567890abcdef", 15);
-    
+
     printf("%d,%s\n", mSenderData.mUartCommandData.uDataLen, mSenderData.uUpgradeCmdData);
 
 #endif
@@ -373,13 +457,13 @@ int main()
     scanf_s("%d", &itype);
     char buffer[MAX_PATH] = { 0 };
     DWORD namelen = MAX_PATH;
-    BOOL bret =  GetComputerNameExA((COMPUTER_NAME_FORMAT)itype, buffer, &namelen);
+    BOOL bret = GetComputerNameExA((COMPUTER_NAME_FORMAT)itype, buffer, &namelen);
     //BOOL bret = GetComputerNameA(nullptr, &namelen);
     //BOOL bret = GetComputerNameA(buffer, &namelen);
     char namebuffer[MAX_PATH] = { 0 };  //ComputerNamePhysicalDnsHostname
     sprintf(namebuffer, "%d%s", itype, "-G3-DTEN-0123456789ABCDEFGHIGKLMNOPQRSTUVWXYZ");
     bret = SetComputerNameExA((COMPUTER_NAME_FORMAT)itype, namebuffer);//SetComputerNameA("test_dten");
-    
+
     printf("%d-name:%s, len:%d\n", GetLastError(), buffer, namelen);
     //\\s(\d{ 2 }) :(\d{ 2 })
     string ws = "^\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}$";
@@ -422,7 +506,7 @@ int main()
     string onTime_Min = onTime.substr(14, 2);
     char param[32] = { 0 };
     sprintf_s(param, "2 %d %d %d 0", atoi(onTime_day.c_str()), atoi(onTime_Hour.c_str()), atoi(onTime_Min.c_str()));
-    
+
 #endif
     //PrintDevicesInfo();
 #if 0
@@ -521,27 +605,27 @@ int main()
     vMMReg.push_back({ 0x000014, 0x00000000 });
     vMMReg.push_back({ 0x000000, 0x00131111 });
     vMMReg.push_back({ 0x000001, 0x00131111 });
-   
+
     std::vector<MMRegData>::iterator it;
     for (it = vMMReg.begin(); it != vMMReg.end(); ++it)
     {
         uint32_t addr = it->addr;
         uint32_t data = it->data;
     }
-   
-   /* std::wstring strDevDes = L"1-MicrophoneDTEN Mic d7)";
-    wsmatch  matchResult;
-    wregex pattern(L".*Microphone.*DTEN Mic.*");
-    if (std::regex_match(strDevDes, matchResult, pattern))
-    {
-        printf("---------\n");
-    }*/
+
+    /* std::wstring strDevDes = L"1-MicrophoneDTEN Mic d7)";
+     wsmatch  matchResult;
+     wregex pattern(L".*Microphone.*DTEN Mic.*");
+     if (std::regex_match(strDevDes, matchResult, pattern))
+     {
+         printf("---------\n");
+     }*/
     std::vector<wstring> vecMicNode1;
     vecMicNode1.push_back(L"MMDEVAPI\\AudioEndpoints");
     dwGetCurDrvInfo1(NULL, NULL, vecMicNode1, nullptr, L"test12323213");
     GetDrvStatusByName(L".*Microphone.*DTEN Mic.*");
     //GetDrvStatusByName(L".*DTEN Board.*");
-    
+
 #endif
 #if 0
     uint8_t newVer[10] = { 0 };
@@ -575,13 +659,13 @@ int main()
     int nn = 0;
 #endif
 #if 0
-    TCHAR* arrSpeakerHard2[1] = { _T("USB\\\\VID_351E&PID_00CD&REV_.{4}")};
+    TCHAR* arrSpeakerHard2[1] = { _T("USB\\\\VID_351E&PID_00CD&REV_.{4}") };
     DevDrvInfo drvInfoD = { 0 };
     int nRetCD = dwGetCurDrvInfo(nullptr, nullptr, arrSpeakerHard2, 1, &drvInfoD);
 #endif
 #if 0
     string strVer = "1.9.8b";
-    
+
     uint8_t newVer[128] = { 0 };
     char* token = strtok((char*)strVer.c_str(), ".");
     int i = 2;
@@ -597,26 +681,26 @@ int main()
     }
 #endif
 #if 0
-	DWORD dwThreadId;
-	string strCmd = "reg add \"HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\DTEN\" /f /v \"disable_hdmi_auto\" /t REG_DWORD /d \"1\"";
-	HANDLE m_hThread = CreateThread(NULL, 0, RunOrbitCmdThread, (char*)strCmd.c_str(), 0, &dwThreadId);
+    DWORD dwThreadId;
+    string strCmd = "reg add \"HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\DTEN\" /f /v \"disable_hdmi_auto\" /t REG_DWORD /d \"1\"";
+    HANDLE m_hThread = CreateThread(NULL, 0, RunOrbitCmdThread, (char*)strCmd.c_str(), 0, &dwThreadId);
 #endif
 #if 0
-	std::wstring strDevDes = L"DTEN Board (Intel(R) Display Audio)";
+    std::wstring strDevDes = L"DTEN Board (Intel(R) Display Audio)";
     if (strDevDes.find(SPEAKER_PCIE) != std::wstring::npos)
     {
         int nRet = 1;
     }
-	GetDrvStatusByName(SPEAKER_PCIE);
+    GetDrvStatusByName(SPEAKER_PCIE);
 #endif
     //USB\VID_174F&PID_2440&REV_0014&MI_00
     //TCHAR* arrSpeakerHard[2] = { NULL, STR_CAMERAL_HARDID_REGEX };
 #if 0
-	printf("USB\\\\VID_1D6B&PID_0105&REV_.{4}&MI_00\n");
-	TCHAR* arrSpeakerHard[2] = { NULL, STR_SPEAKER_HARDID_REGEX };
+    printf("USB\\\\VID_1D6B&PID_0105&REV_.{4}&MI_00\n");
+    TCHAR* arrSpeakerHard[2] = { NULL, STR_SPEAKER_HARDID_REGEX };
     dwGetCurDrvInfo(NULL, _T("USB"), arrSpeakerHard, 2, NULL);
-	printf("\n---------------------\n");
-	printf("USB\\\\VID_10C4&PID_EA60&REV_.{4}\n");
+    printf("\n---------------------\n");
+    printf("USB\\\\VID_10C4&PID_EA60&REV_.{4}\n");
     TCHAR* arrSpeakerHard2[2] = { NULL, STR_BUZ_HARDID_REGEX };
     dwGetCurDrvInfo(NULL, _T("USB"), arrSpeakerHard2, 2, NULL);
 #endif
@@ -627,26 +711,26 @@ int main()
         FILE_FLAG_BACKUP_SEMANTICS, NULL);
     FILETIME lpCreationTime;
     FILETIME lpLastAccessTime;
-    FILETIME lpLastWriteTime; 
-	if (GetFileTime(hFile, &lpCreationTime, &lpLastAccessTime, &lpLastWriteTime))
-	{
-		time_t tt;
-		tm tm_;
-		SYSTEMTIME syst;
-		FileTimeToTime_t(&lpCreationTime, &tt);
-		FileTimeToTm(&lpCreationTime, &tm_);
-		FileTimeToSystemTime(&lpCreationTime, &syst);
+    FILETIME lpLastWriteTime;
+    if (GetFileTime(hFile, &lpCreationTime, &lpLastAccessTime, &lpLastWriteTime))
+    {
+        time_t tt;
+        tm tm_;
+        SYSTEMTIME syst;
+        FileTimeToTime_t(&lpCreationTime, &tt);
+        FileTimeToTm(&lpCreationTime, &tm_);
+        FileTimeToSystemTime(&lpCreationTime, &syst);
         chrono::system_clock::time_point now = chrono::system_clock::now();//当前时间time_point格式
         std::time_t nowTime_t = chrono::system_clock::to_time_t(now);//转换为 std::time_t 格式 
-		LONGLONG duration = (nowTime_t - tt);
-		LONGLONG duration1 = duration / 60 / 60 / 12;
-		int num = 0;
-	}
+        LONGLONG duration = (nowTime_t - tt);
+        LONGLONG duration1 = duration / 60 / 60 / 12;
+        int num = 0;
+    }
 
-	chrono::system_clock::time_point now = chrono::system_clock::now();//当前时间time_point格式
-	std::time_t nowTime_t = chrono::system_clock::to_time_t(now);//转换为 std::time_t 格式 
-	std::put_time(std::localtime(&nowTime_t), "%Y-%m-%d %X"); //2021-6-24 14:44:47
-	//chrono::system_clock::from_time_t()
+    chrono::system_clock::time_point now = chrono::system_clock::now();//当前时间time_point格式
+    std::time_t nowTime_t = chrono::system_clock::to_time_t(now);//转换为 std::time_t 格式 
+    std::put_time(std::localtime(&nowTime_t), "%Y-%m-%d %X"); //2021-6-24 14:44:47
+    //chrono::system_clock::from_time_t()
 #endif
 #if 0
     std::string strTime = "19:30-23:30";
@@ -676,17 +760,17 @@ int main()
             iEndMin = atoi(strEndValue[1].c_str());
             iEndTime = iEndHour * 60 + iEndMin;
         }
-	}
+    }
     SYSTEMTIME stTime = { 0 };
     GetLocalTime(&stTime);
 
     int iCurTime = stTime.wHour * 60 + stTime.wMinute;
 
-	int iWaiteTime = 0;
+    int iWaiteTime = 0;
     if (iCurTime < iStartTime)
     {
         iWaiteTime = iStartTime - iCurTime;
-}
+    }
     else if (iCurTime >= iStartTime && iCurTime <= iEndTime)
     {
         iWaiteTime = 0;
@@ -695,116 +779,116 @@ int main()
     {
         iWaiteTime = 24 * 60 - iCurTime + iStartTime;
     }
-	int num = 0;
+    int num = 0;
 #endif
 #if 0
-	ptrTest* pp = new ptrTest(&a1);
+    ptrTest* pp = new ptrTest(&a1);
     pp->print();
-	pp->test();
-	pp->print();
+    pp->test();
+    pp->print();
 #endif
 #if 0
-	std::filesystem::path p("c:\\windows");
-	if (std::filesystem::exists(p))
-	{
-		if (std::filesystem::is_directory(p))
-		{
-			std::filesystem::path fi("c:\\DTEN\\Final_1.bin");
-			uintmax_t filesize = std::filesystem::file_size(fi);
-			return 0;
-		}
-	}
+    std::filesystem::path p("c:\\windows");
+    if (std::filesystem::exists(p))
+    {
+        if (std::filesystem::is_directory(p))
+        {
+            std::filesystem::path fi("c:\\DTEN\\Final_1.bin");
+            uintmax_t filesize = std::filesystem::file_size(fi);
+            return 0;
+        }
+    }
 #endif
 #if 0
-	HANDLE hThread = (HANDLE)_beginthreadex(nullptr, 0, threadproct, nullptr, 0, NULL);
-	DWORD dwRet = WaitForSingleObject(hThread, 3000);
-	if (dwRet == WAIT_TIMEOUT)
-	{
-		TerminateThread(hThread, 0);
-		printf("timeout\n");
-	}
-	else if (dwRet == WAIT_OBJECT_0)
-	{
-		printf("object 0\n");
-	}
+    HANDLE hThread = (HANDLE)_beginthreadex(nullptr, 0, threadproct, nullptr, 0, NULL);
+    DWORD dwRet = WaitForSingleObject(hThread, 3000);
+    if (dwRet == WAIT_TIMEOUT)
+    {
+        TerminateThread(hThread, 0);
+        printf("timeout\n");
+    }
+    else if (dwRet == WAIT_OBJECT_0)
+    {
+        printf("object 0\n");
+    }
 #endif // endif
 #if 0
-	char* src = "123456789";
-	
-	int pos = 0;
-	while (pos < 9)
-	{
-		char dest[2] = { 0 };
-		memmove_s(dest, 2, src+pos, 2);
-		pos += 2;
-	}
-#endif
-#if 0
-	std::map<UINT, uint8_t*> mma;
-	uint8_t a[] = { 0x1, 0x2 };
-	uint8_t b[] = { 0x1, 0x2 };
-	mma[0] = a;
-	mma[1] = b;
-	std::map<UINT, uint8_t*>::iterator it = mma.begin();
-	for (; it != mma.end(); ++it)
-	{
-		UINT F = it->first;
-		printf("f=%d", F);
-		uint8_t* p = it->second;
-		printf("%d", *p++);
-		printf("%d\n", *p);
+    char* src = "123456789";
 
-		int num = 0;
-	}
+    int pos = 0;
+    while (pos < 9)
+    {
+        char dest[2] = { 0 };
+        memmove_s(dest, 2, src + pos, 2);
+        pos += 2;
+    }
+#endif
+#if 0
+    std::map<UINT, uint8_t*> mma;
+    uint8_t a[] = { 0x1, 0x2 };
+    uint8_t b[] = { 0x1, 0x2 };
+    mma[0] = a;
+    mma[1] = b;
+    std::map<UINT, uint8_t*>::iterator it = mma.begin();
+    for (; it != mma.end(); ++it)
+    {
+        UINT F = it->first;
+        printf("f=%d", F);
+        uint8_t* p = it->second;
+        printf("%d", *p++);
+        printf("%d\n", *p);
 
-	HCRYPTPROV hCryptProv;
-	bool bRet = ::CryptAcquireContext(&hCryptProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT);
-#endif
-#if 0
-	IMAGE_DOS_SIGNATURE;
-	IMAGE_DOS_HEADER dosHeader;
-	IMAGE_NT_HEADERS ntHeader;
-	IMAGE_FILE_HEADER fileHeader;
-	IMAGE_OPTIONAL_HEADER optionalHeader;
-	IMAGE_SECTION_HEADER sectionHeader;
-#endif
-#if 0
-	TIME_ZONE_INFORMATION   tzi;
-	GetTimeZoneInformation(&tzi);
-	std::wstring   strStandName = tzi.StandardName;
+        int num = 0;
+    }
 
-	LANGID LangLCID = 0;
-	char GeoData[MAX_PATH] = { 0 };
-	GEOID GeoId = 0;
-	LangLCID = GetUserDefaultLCID();
-	GeoId = GetUserGeoID(GEOCLASS_NATION);
-	std::string strGeoData = "";
-	if (GetGeoInfoA(GeoId, GEO_ISO2, GeoData, MAX_PATH, LangLCID))
-	{
-		strGeoData = GeoData;
-	}
-	printf("LangLCID=%d, GeoId=%d, strGeoData=%s\n", LangLCID, GeoId, strGeoData.c_str());
+    HCRYPTPROV hCryptProv;
+    bool bRet = ::CryptAcquireContext(&hCryptProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT);
 #endif
 #if 0
-	char str[] = "abc, 12, de, ff";
-	char* buf = nullptr;
-	char* pstoken = nullptr;
-	pstoken = strtok_s(str, ",", &buf);
-	printf("%s\n", pstoken);
-	while (pstoken != nullptr )
-	{
-		pstoken = strtok_s(NULL, ",", &buf);
-		string st;
-		st.assign(pstoken);
-		if (pstoken != nullptr)
-			printf("%s\n", pstoken);
-	}
+    IMAGE_DOS_SIGNATURE;
+    IMAGE_DOS_HEADER dosHeader;
+    IMAGE_NT_HEADERS ntHeader;
+    IMAGE_FILE_HEADER fileHeader;
+    IMAGE_OPTIONAL_HEADER optionalHeader;
+    IMAGE_SECTION_HEADER sectionHeader;
 #endif
-	//EnumWindowStations(WorkStationEnum, 0);
-	//EnumDesktops(NULL, DeskEnum, 0);
-	//Socket_udp_test();
-#if 1
-	//CUDPCnt::GetInstance()->run(callback_parse_udp_data);
+#if 0
+    TIME_ZONE_INFORMATION   tzi;
+    GetTimeZoneInformation(&tzi);
+    std::wstring   strStandName = tzi.StandardName;
+
+    LANGID LangLCID = 0;
+    char GeoData[MAX_PATH] = { 0 };
+    GEOID GeoId = 0;
+    LangLCID = GetUserDefaultLCID();
+    GeoId = GetUserGeoID(GEOCLASS_NATION);
+    std::string strGeoData = "";
+    if (GetGeoInfoA(GeoId, GEO_ISO2, GeoData, MAX_PATH, LangLCID))
+    {
+        strGeoData = GeoData;
+    }
+    printf("LangLCID=%d, GeoId=%d, strGeoData=%s\n", LangLCID, GeoId, strGeoData.c_str());
+#endif
+#if 0
+    char str[] = "abc, 12, de, ff";
+    char* buf = nullptr;
+    char* pstoken = nullptr;
+    pstoken = strtok_s(str, ",", &buf);
+    printf("%s\n", pstoken);
+    while (pstoken != nullptr)
+    {
+        pstoken = strtok_s(NULL, ",", &buf);
+        string st;
+        st.assign(pstoken);
+        if (pstoken != nullptr)
+            printf("%s\n", pstoken);
+    }
+#endif
+    //EnumWindowStations(WorkStationEnum, 0);
+    //EnumDesktops(NULL, DeskEnum, 0);
+    //Socket_udp_test();
+#if 0
+    //CUDPCnt::GetInstance()->run(callback_parse_udp_data);
     //CTCPCnt::GetInstance()->run(callback_parse_udp_data);
     CTCPCnt::GetInstance()->SendData(56336, (void*)"123", 3);
 #endif
@@ -813,19 +897,19 @@ int main()
     //string sql = "UPDATE HEALTHCHECKCATEGORY_TRACKING SET amount = %d WHERE ID = %d";
     string strErrorID = "h01230";
     char szCmd[1256];
-	string f = strErrorID.substr(0, 1);
+    string f = strErrorID.substr(0, 1);
     sprintf_s(szCmd, sql.c_str(), strErrorID.c_str(), f.c_str());
-	printf("%s\n", szCmd);
+    printf("%s\n", szCmd);
 #endif
 #if 0
     HKEY hk;
-	LSTATUS lRet;
+    LSTATUS lRet;
     wstring szSubKey = _T("SOFTWARE\\Microsoft\\SkypeRoomSystem");
-	//wstring szSubKey = L"SOFTWARE\\Kingsoft";
+    //wstring szSubKey = L"SOFTWARE\\Kingsoft";
 
     if ((lRet = ::RegOpenKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\TEST", 0, KEY_READ, &hk)) != ERROR_SUCCESS)
     {
-		int err = GetLastError();
+        int err = GetLastError();
         return 0;
     }
 
@@ -834,7 +918,7 @@ int main()
     //TCHAR szItemValue[] = _T("Chinese\r\n中文");
     if ((lRet = ::RegSetValueEx(hk, szItemName.c_str(), 0, REG_MULTI_SZ, (BYTE*)szItemValue, sizeof(szItemValue))) != ERROR_SUCCESS)
     {
-		int err = GetLastError();
+        int err = GetLastError();
         RegCloseKey(hk);
         return 0;
     }
@@ -862,9 +946,76 @@ abc\0efga";
     ModifyRegMultiSZ(L"SOFTWARE\\Microsoft\\SkypeRoomSystem", L"Oem-Tracking", szItemValue, sizeof(szItemValue));
     WCHAR szItemValue2[] = L"Chinese\0english\0中文";
     int len2 = sizeof(szItemValue2);
-	//ModifyRegMultiSZ(L"SOFTWARE\\TEST", L"item", szItemValue2, sizeof(szItemValue2));
+    //ModifyRegMultiSZ(L"SOFTWARE\\TEST", L"item", szItemValue2, sizeof(szItemValue2));
+#endif
+    EnablePrivilege();
+
+    HANDLE hMapFile = nullptr;
+    #define BUF_SIZE 256
+    TCHAR szName[] = TEXT("MyFileMappingObject");
+    char szMsg[] = "Message from first process";
+    if (nullptr == hMapFile)
+        hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, BUF_SIZE, szName);
+    if (hMapFile == NULL) {
+        printf("Could not create file mapping object (%d).\n", GetLastError());
+        return 1;
+    }
+    pBuf = (char*)MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, BUF_SIZE);
+    if (pBuf == NULL) {
+        printf("Could not map view of file (%d).\n",
+            GetLastError());
+        return 2;
+    }
+    CopyMemory((PVOID)pBuf, szMsg, strlen(szMsg));
+    char* pBuf2 = (char*)MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, BUF_SIZE);
+    if (pBuf2 == NULL) {
+        printf("Could not map view of file (%d).\n",
+            GetLastError());
+        return 2;
+    }
+
+    CopyMemory((PVOID)pBuf, "1232455", strlen(szMsg));
+    char* pBuf3 = (char*)MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, BUF_SIZE);
+    if (pBuf3 == NULL) {
+        printf("Could not map view of file (%d).\n",
+            GetLastError());
+        return 2;
+    }
+    
+    CloseHandle(hMapFile);
+#if 0
+    std::thread t111([]() {
+       
+        return 0;
+        });
+    t111.detach();
+    std::thread t1112([](int i) {
+        HANDLE hMapFile;
+        LPCTSTR pBuf;
+        hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, szName);
+        if (hMapFile == NULL) {
+            printf("Could not open file mapping object (%d).\n", GetLastError());
+            return 1;
+        }
+        pBuf = (LPTSTR)MapViewOfFile(hMapFile, // handle to map object
+            FILE_MAP_ALL_ACCESS,  // read/write permission
+            0,
+            0,
+            BUF_SIZE);
+        if (pBuf == NULL) {
+            printf("Could not map view of file (%d).\n",
+                GetLastError());
+            return 2;
+        }
+        MessageBox(NULL, pBuf, TEXT("Process2"), MB_OK);
+        UnmapViewOfFile(pBuf);
+        CloseHandle(hMapFile);
+        return 0;
+        });
+    t1112.detach();
 #endif
     int num = 0;
     system("pause");
 	return 0;
 }
+
