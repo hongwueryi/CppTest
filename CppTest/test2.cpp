@@ -18,6 +18,59 @@ std::vector<int> vi;
 using namespace std;
 char* pBuf = nullptr;
 
+int getDataFromConsole() 
+{
+    HANDLE hRead, hWrite;    //管道的读写句柄
+    SECURITY_ATTRIBUTES sa; //管道安全属性相关结构体
+
+    sa.nLength = sizeof(SECURITY_ATTRIBUTES); //结构体长度赋值
+    sa.lpSecurityDescriptor = NULL;           //NULL管道默认安全描述符,管道的安全属性将继承与父程序
+    sa.bInheritHandle = TRUE;                 //一个布尔值，指定在创建新进程时是否继承返回的句柄。如果此成员为TRUE，则新进程将继承该句柄。
+
+    if (!::CreatePipe(&hRead, &hWrite, &sa, 0)) {  //尝试创建管道，失败则弹出提示并退出
+        printf("Error on CreateProcess\n");
+        return 1;
+    }
+
+    STARTUPINFO si;         //启动信息结构体
+    PROCESS_INFORMATION pi; //进程信息结构体
+    si.cb = sizeof(STARTUPINFO);  //初始化启动信息结构体大小
+    ::GetStartupInfo(&si);        //获取父进程的启动信息，利用这个函数我们可以只需要修改较少的参数值
+    si.hStdError = hWrite;        //重定向错误信息输出到管道
+    si.hStdOutput = hWrite;       //重定向标准输出新信息到管道
+    si.wShowWindow = SW_HIDE;     //设定子进程窗体是否隐藏
+    si.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES; //wShowWindow成员将包含其他信息；hStdInput，hStdOutput和hStdError成员包含其他信息。
+    if (!::CreateProcess(
+        L"E:\\Dten\\other demo\\CppTest\\x64\\Debug\\C11Test.exe",
+        nullptr,
+        NULL, NULL,
+        TRUE,                   //新进程继承父进程相关权限
+        NULL, NULL, NULL,
+        &si,
+        &pi)
+        ) {
+        printf("Error on CreateProcess, err=%d\n", GetLastError());
+        return 1;
+    }
+
+    ::CloseHandle(pi.hThread);
+    ::CloseHandle(pi.hProcess);
+    ::CloseHandle(hWrite);    //关闭管道写入句柄
+
+    std::string result;
+    char buffer[1025] = { 0 };
+    DWORD bytesRead;
+    while (true) {   //读取管道内的数据
+        memset(buffer, 0, 1025);
+        if (::ReadFile(hRead, buffer, 1024, &bytesRead, NULL) == NULL) break;
+        result += buffer;
+        ::Sleep(100);
+    }
+
+    printf("\n\n%s\n", result.c_str());
+    return 0;
+}
+
 BOOL EnablePrivilege()
 {
     LUID PrivilegeRequired;
@@ -948,6 +1001,7 @@ abc\0efga";
     int len2 = sizeof(szItemValue2);
     //ModifyRegMultiSZ(L"SOFTWARE\\TEST", L"item", szItemValue2, sizeof(szItemValue2));
 #endif
+#if 0
     EnablePrivilege();
 
     HANDLE hMapFile = nullptr;
@@ -983,6 +1037,7 @@ abc\0efga";
     }
     
     CloseHandle(hMapFile);
+#endif
 #if 0
     std::thread t111([]() {
        
@@ -1014,7 +1069,25 @@ abc\0efga";
         });
     t1112.detach();
 #endif
+#if 0
+    //getDataFromConsole();
+    string result = "111111d\"1234567 89\"ns_netd000000";
+    UINT nPosStart = result.find_first_of("\"");
+    UINT nPosEnd = result.find_last_of("\"");
+    if (nPosStart == std::string::npos || nPosEnd == std::string::npos)
+    {
+        
+        return 0;
+    }
+
+
+    string dten_sn = result.substr(nPosStart+1, nPosEnd-nPosStart-1);
+
+    wstring wlen = L"123";
+    int len = wlen.length();
     int num = 0;
+#endif
+
     system("pause");
 	return 0;
 }
