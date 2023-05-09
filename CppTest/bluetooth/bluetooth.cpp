@@ -579,7 +579,7 @@ ULONG RunServerMode(_In_ int iMaxCxnCycles)
     if (CXN_SUCCESS == ulRetCode) {
         StringCbPrintf(pszInstanceName, cbInstanceNameSize, L"%s %s", szThisComputerName, CXN_INSTANCE_STRING);
         wsaQuerySet.lpszServiceInstanceName = pszInstanceName;
-        wsaQuerySet.lpszComment = L"Example Service instance registered in the directory service through RnR";
+        wsaQuerySet.lpszComment = (LPWSTR)L"Example Service instance registered in the directory service through RnR";
         wsaQuerySet.dwNameSpace = NS_BTH;
         wsaQuerySet.dwNumberOfCsAddrs = 1;      // Must be 1.
         wsaQuerySet.lpcsaBuffer = lpCSAddrInfo; // Req'd.

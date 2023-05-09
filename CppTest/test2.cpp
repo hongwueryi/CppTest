@@ -23,10 +23,10 @@ bool g_need = false;
 std::once_flag g_once_flag;
 #include <fstream>
 #include "usb.h"
-//#include <source_location>
+#include <source_location>
 void WriteFile_My(std::string message,
-    std::string logfile = "log.log"/*,
-    const std::source_location location = std::source_location::current()*/)
+    std::string logfile = "log.log",
+    const std::source_location location = std::source_location::current())
 {
     std::ofstream ofile;
     SYSTEMTIME systime;
@@ -37,13 +37,13 @@ void WriteFile_My(std::string message,
         systime.wHour, systime.wMinute, systime.wSecond);
     std::string strbuffer = buffer;
     strbuffer += "[";
-    //strbuffer += location.file_name();
+    strbuffer += location.file_name();
     strbuffer += "] [";
-    //strbuffer += std::to_string(location.line());
+    strbuffer += std::to_string(location.line());
     strbuffer += ":";
-    //strbuffer += std::to_string(location.column());
+    strbuffer += std::to_string(location.column());
     strbuffer += "] [";
-    //strbuffer += location.function_name();
+    strbuffer += location.function_name();
     strbuffer += "] ";
     strbuffer += message;
     ofile.open(logfile.c_str(), std::ios::app);
@@ -386,7 +386,10 @@ BOOL ModifyRegMultiSZ(LPCWSTR lpKeyPath, LPCWSTR lpItem, LPCTSTR dwValue, int le
     HKEY hKey = NULL, hSubKey = NULL;
     DWORD dwResOpen = 0;
     BOOL bRet = TRUE;
-
+    wstring wstr = L"";
+    DWORD dwType, dwSize;
+    vector<wstring> vec;
+    TCHAR* pChValue = new TCHAR[dwSize + 1]{ 0 };
 #if 1
     if (ERROR_SUCCESS != RegCreateKeyEx(HKEY_LOCAL_MACHINE,
         lpKeyPath,
@@ -412,15 +415,13 @@ BOOL ModifyRegMultiSZ(LPCWSTR lpKeyPath, LPCWSTR lpItem, LPCTSTR dwValue, int le
         bRet = FALSE;
     }
 
-	wstring wstr = L"";
-	DWORD dwType, dwSize;
-	vector<wstring> vec;
+	
     // 获取类型、长度
     if (RegQueryValueEx(hKey, lpItem, NULL, &dwType, NULL, &dwSize) != ERROR_SUCCESS)
     {
         goto toerr;
     }
-	TCHAR* pChValue = new TCHAR[dwSize + 1]{ 0 };
+	
     // 读取数据
    
     // 此函数无需调用RegOpenKeyEx，仅在VISTA及以上版本系统可用，XP系统以下系统不可用，XP系统用RegQueryValueEx
