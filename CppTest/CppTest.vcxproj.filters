@@ -24,6 +24,9 @@
     <ClCompile Include="bluetooth\bluetooth.cpp">
       <Filter>bluetooth</Filter>
     </ClCompile>
+    <ClCompile Include="MonitorTP.cpp">
+      <Filter>hardware</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="method.h" />
@@ -53,6 +56,9 @@
     </ClInclude>
     <ClInclude Include="wifi.h">
       <Filter>wifi</Filter>
+    </ClInclude>
+    <ClInclude Include="MonitorTP.h">
+      <Filter>hardware</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

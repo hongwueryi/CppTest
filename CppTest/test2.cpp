@@ -24,6 +24,7 @@ std::once_flag g_once_flag;
 #include <fstream>
 #include "usb.h"
 #include <source_location>
+#include "MonitorTP.h"
 void WriteFile_My(std::string message,
     std::string logfile = "log.log",
     const std::source_location location = std::source_location::current())
@@ -1517,7 +1518,7 @@ abc\0efga";
     EnumDisplayMonitors(NULL, NULL, Monitorenumproc1, 0);
     //ListDeviceInstancePath(L"Monitor");
 #endif
-
+    //CMonitorTP::GetInstance()->AssociateTPwithMonitor();
     system("pause");
 	return 0;
 }

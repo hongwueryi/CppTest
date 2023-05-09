@@ -44,7 +44,8 @@ int dwGetCurDrvInfo(LPGUID pClsGuid, LPCTSTR lpEnumerator, TCHAR* psRegex[], int
     }
 
 #endif
-
+    DWORD dwStat = 0;
+    HDEVINFO hDevInfo = INVALID_HANDLE_VALUE;
     int nRet = ERR_DEVICE_NO_FOUND, iIndex = 0, i = 0;
     DWORD dwProblem = 0, dwDevState = 0;
     ULARGE_INTEGER DrvDate_Cur = { 0 };
@@ -71,7 +72,7 @@ int dwGetCurDrvInfo(LPGUID pClsGuid, LPCTSTR lpEnumerator, TCHAR* psRegex[], int
         goto param_err;
     }
 
-    HDEVINFO hDevInfo = SetupDiGetClassDevs(pClsGuid, lpEnumerator, NULL, DIGCF_ALLCLASSES | DIGCF_PRESENT);
+    hDevInfo = SetupDiGetClassDevs(pClsGuid, lpEnumerator, NULL, DIGCF_ALLCLASSES | DIGCF_PRESENT);
 
     if (hDevInfo == INVALID_HANDLE_VALUE)
     {
@@ -91,7 +92,7 @@ int dwGetCurDrvInfo(LPGUID pClsGuid, LPCTSTR lpEnumerator, TCHAR* psRegex[], int
             break;
         }
 
-        DWORD dwStat = CM_Get_DevNode_Status(&dwDevState, &dwProblem, DeviceInfoData.DevInst, 0);
+        dwStat = CM_Get_DevNode_Status(&dwDevState, &dwProblem, DeviceInfoData.DevInst, 0);
         printf("%d------hardid:[%s], dwDevState:[0x%0x], dwProblem:[0x%0x], nRet:%d\n", iIndex, ws2s(szHardWareID).c_str(), dwDevState, dwProblem, dwStat);
         if (!SetupDiGetDeviceRegistryProperty(hDevInfo, &DeviceInfoData, SPDRP_HARDWAREID,
             NULL, (PBYTE)szHardWareID, sizeof(szHardWareID) - 2, NULL))
@@ -146,7 +147,7 @@ int dwGetCurDrvInfo(LPGUID pClsGuid, LPCTSTR lpEnumerator, TCHAR* psRegex[], int
     m_curDrvInfo.uDrvDetectRet |= DEV_DETECT_TYPE_KNOWN;
     nRet = DEVICE_NORMAL;
 
-    DWORD dwStat = CM_Get_DevNode_Status(&dwDevState, &dwProblem, DeviceInfoData.DevInst, 0);
+    dwStat = CM_Get_DevNode_Status(&dwDevState, &dwProblem, DeviceInfoData.DevInst, 0);
     printf("------dwDevState:[0x%0x], dwProblem:[0x%0x], nRet:%d\n", dwDevState, dwProblem, dwStat);
     if (dwStat != CR_SUCCESS || dwProblem != 0)
     {

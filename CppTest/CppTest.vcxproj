@@ -167,6 +167,7 @@
     <ClInclude Include="ExceptionReport.h" />
     <ClInclude Include="factory.h" />
     <ClInclude Include="method.h" />
+    <ClInclude Include="MonitorTP.h" />
     <ClInclude Include="observe.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SerialPort\EnumSerial.h" />
@@ -181,6 +182,7 @@
     <ClCompile Include="commonUtil.cpp" />
     <ClCompile Include="cpu.cpp" />
     <ClCompile Include="ExceptionReport.cpp" />
+    <ClCompile Include="MonitorTP.cpp" />
     <ClCompile Include="MyQueue.cpp" />
     <ClCompile Include="serialportcomm.cpp" />
     <ClCompile Include="SerialPort\EnumSerial.cpp" />

@@ -113,11 +113,104 @@ namespace CREG
         RegCloseKey(hKeyResult);
         return stamp;
     }
+
+    BOOL ModifyRegSZHKEY(LPCWSTR lpKeyPath, LPCWSTR lpSubKey, LPCWSTR lpSubKeyItem, LPCWSTR lpItemValue, UINT32 uLen)
+    {
+        HKEY hKey = NULL, hSubKey = NULL;
+        DWORD dwResOpen = 0;
+        BOOL bRet = TRUE;
+
+        if (ERROR_SUCCESS != RegCreateKeyEx(HKEY_LOCAL_MACHINE,
+            lpKeyPath,
+            NULL,
+            NULL,
+            REG_OPTION_NON_VOLATILE,
+            KEY_ALL_ACCESS,
+            NULL,
+            &hKey,
+            &dwResOpen))
+        {
+            /*LOG(INFO) << "lpKeyPath :[" << SysUtil::ws2s(lpKeyPath).c_str()
+                << "], lpSubKey:[" << SysUtil::ws2s(lpSubKey).c_str()
+                << "], lpSubKeyItem:[" << SysUtil::ws2s(lpSubKeyItem).c_str()
+                << "], lpItemValue:[" << SysUtil::ws2s(lpItemValue).c_str()
+                << "], uLen:[" << uLen
+                << "], RegCreateKeyEx  err 1";*/
+            bRet = FALSE;
+            return bRet;
+        }
+
+        if (ERROR_SUCCESS != RegCreateKeyEx(hKey,
+            lpSubKey,
+            NULL,
+            NULL,
+            REG_OPTION_NON_VOLATILE,
+            KEY_ALL_ACCESS,
+            NULL,
+            &hSubKey,
+            &dwResOpen))
+        {
+            /*LOG(INFO) << "lpKeyPath :[" << SysUtil::ws2s(lpKeyPath).c_str()
+                << "], lpSubKey:[" << SysUtil::ws2s(lpSubKey).c_str()
+                << "], lpSubKeyItem:[" << SysUtil::ws2s(lpSubKeyItem).c_str()
+                << "], lpItemValue:[" << SysUtil::ws2s(lpItemValue).c_str()
+                << "], uLen:[" << uLen
+                << "], RegCreateKeyEx  err 2";*/
+            bRet = FALSE;
+            goto reg_err;
+        }
+
+        if (ERROR_SUCCESS != ::RegSetValueEx(hSubKey, lpSubKeyItem, 0, REG_SZ, (CONST BYTE*) lpItemValue, uLen))
+        {
+            bRet = FALSE;
+            /*LOG(INFO) << "lpKeyPath :[" << SysUtil::ws2s(lpKeyPath).c_str()
+                << "], lpSubKey:[" << SysUtil::ws2s(lpSubKey).c_str()
+                << "], lpSubKeyItem:[" << SysUtil::ws2s(lpSubKeyItem).c_str()
+                << "], lpItemValue:[" << SysUtil::ws2s(lpItemValue).c_str()
+                << "], uLen:[" << uLen
+                << "], RegSetValueEx  err";*/
+        }
+
+        RegCloseKey(hSubKey);
+    reg_err:
+        RegCloseKey(hKey);
+        return bRet;
+    }
 }
 
 /////////////////////////////////////////////////
 namespace CUtils
 {
+    std::string UnicodeToUtf8(const std::wstring& wstr)
+    {
+        std::string ret_str = "";
+        int ansiiLen = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, nullptr, 0, nullptr, nullptr);
+        char* pAssii = (char*)malloc(sizeof(char) * ansiiLen);
+        WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, pAssii, ansiiLen, nullptr, nullptr);
+        if (nullptr != pAssii)
+        {
+            ret_str = pAssii; 
+        }
+        free(pAssii);
+        
+        return ret_str;
+    }
+
+    std::wstring Utf8ToUnicode(const std::string& str)
+    {
+        std::wstring ret_str = L"";
+        int unicodeLen = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
+        wchar_t* pUnicode = (wchar_t*)malloc(sizeof(wchar_t) * unicodeLen);
+        MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, pUnicode, unicodeLen);
+        if (nullptr != pUnicode)
+        {
+            ret_str = pUnicode;
+        }
+        
+        free(pUnicode);
+        return ret_str;
+    }
+
     bool blCheckUdpPortListen(unsigned int nPort)
     {
         if (nPort < 1024 || nPort > 65000)
