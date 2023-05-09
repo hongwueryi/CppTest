@@ -11,12 +11,242 @@
 #include <sstream>
 #include "tcpprxoy.h"
 #include <mutex>
+#include "commonUtil.h"
+#include "factory.h"
+#include "decoratormode.h"
+#include "observe.h"
+#include <hidsdi.h>
+#include "cpu.h"
+#include "wifi.h"
+#define SET_COMMAND(x,y)			 x = (((x) & 0x7FFFFFFF) | ((y) << 31))
+bool g_need = false;
+std::once_flag g_once_flag;
+#include <fstream>
+#include "usb.h"
+//#include <source_location>
+void WriteFile_My(std::string message,
+    std::string logfile = "log.log"/*,
+    const std::source_location location = std::source_location::current()*/)
+{
+    std::ofstream ofile;
+    SYSTEMTIME systime;
+    GetLocalTime(&systime);
+    char buffer[MAX_PATH] = { 0 };
+    sprintf_s(buffer, "[%04d-%02d-%02d %02d:%02d:%02d] ",
+        systime.wYear, systime.wMonth, systime.wDay,
+        systime.wHour, systime.wMinute, systime.wSecond);
+    std::string strbuffer = buffer;
+    strbuffer += "[";
+    //strbuffer += location.file_name();
+    strbuffer += "] [";
+    //strbuffer += std::to_string(location.line());
+    strbuffer += ":";
+    //strbuffer += std::to_string(location.column());
+    strbuffer += "] [";
+    //strbuffer += location.function_name();
+    strbuffer += "] ";
+    strbuffer += message;
+    ofile.open(logfile.c_str(), std::ios::app);
+    ofile << strbuffer.c_str() << std::endl;
+    ofile.close();
+}
+
+BOOL CALLBACK Monitorenumproc1(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
+{
+    Sleep(1000);
+    static int iCount = 0;
+    printf("monitor: { %ld, %ld, %ld, %ld }\n", lprcMonitor->left, lprcMonitor->top, lprcMonitor->right, lprcMonitor->bottom);
+    WriteFile_My("1");
+    MONITORINFOEX infoEx;
+    memset(&infoEx, 0, sizeof(infoEx));
+    infoEx.cbSize = sizeof(infoEx);
+    if (GetMonitorInfo(hMonitor, &infoEx))
+    {
+        WriteFile_My("2");
+        //RECT rcMonitor; //物理显示坐标
+        //RECT rcWork; //工作显示坐标
+        wprintf(L"[%p] [%s] [%s] rcMonitor(l=%d t=%d r=%d b=%d) rcWork(l=%d t=%d r=%d b=%d)\n",
+            hMonitor,
+            infoEx.szDevice,
+            infoEx.dwFlags == MONITORINFOF_PRIMARY ? _T("Primary") : _T("Slave"),
+            infoEx.rcMonitor.left, infoEx.rcMonitor.top, infoEx.rcMonitor.right, infoEx.rcMonitor.bottom,
+            infoEx.rcWork.left, infoEx.rcWork.top, infoEx.rcWork.right, infoEx.rcWork.bottom);
+
+        DISPLAY_DEVICE pDev;
+        ZeroMemory(&pDev, sizeof(DISPLAY_DEVICE));
+        pDev.cb = sizeof(DISPLAY_DEVICE);
+        if (EnumDisplayDevices(infoEx.szDevice, 0, &pDev, EDD_GET_DEVICE_INTERFACE_NAME))
+        {
+            wprintf(L"%s\n", pDev.DeviceID);
+            WriteFile_My("3");
+            WriteFile_My(ws2s(pDev.DeviceID));
+        }
+    
+    }
+    return TRUE;  //继续枚举
+}
+
+BOOL DeleteReg(LPCWSTR lpSubKey, LPCWSTR lpItem)
+{
+    HKEY hkResult = NULL;
+    HKEY hKey = NULL;
+    LSTATUS nRet = -1;
+
+    nRet = RegOpenKeyExW(HKEY_LOCAL_MACHINE, lpSubKey, 0, KEY_ENUMERATE_SUB_KEYS | KEY_QUERY_VALUE | KEY_SET_VALUE, &hKey);
+    if (nRet == ERROR_SUCCESS)
+    {
+        nRet = RegDeleteValueW(hKey, lpItem);
+
+        RegCloseKey(hKey);
+
+        if (nRet != ERROR_SUCCESS)
+        {
+            cout << "delete : failed" << endl;
+        }
+    }
+
+    return nRet == ERROR_SUCCESS ? TRUE : FALSE;
+}
+
+const char* teststr()
+{
+    string strTest = "1234";
+    return strTest.c_str();
+}
+
+bool GetTouchVerEx(const char* pInfo, char* pVer, int nBufLen)
+{
+    const char* pTemp = strstr(pInfo, "REV_");
+    if (NULL == pTemp)
+    {
+        return false;
+    }
+    const char* pTemp1 = strstr(pTemp, "&");
+    if (NULL == pTemp || NULL == pTemp1)
+    {
+        return false;
+    }
+    int nOffset = strlen("REV_");
+    int nLen = pTemp1 - pTemp - nOffset;
+
+    strncpy_s(pVer, nBufLen, pTemp + nOffset, nLen);
+    return true;
+}
+
+
+class MyClass
+{
+public:
+    MyClass(int i = 0)
+    {
+        printf("%d", i);
+    }
+    MyClass(const MyClass& x)	//拷贝构造
+    {
+        printf("拷贝构造\n");;
+    }
+    MyClass& operator=(const MyClass& x) 	//赋值拷贝构造
+    {
+        printf("赋值拷贝构造\n");
+        return *this;
+    }
+    ~MyClass()
+    {
+        printf("~");
+    }
+};
+
+void test_once(int param)
+{
+    printf("only one:%d\n", param);
+}
+
+DWORD WINAPI ProcessRecvMsgThread(LPVOID param)
+{
+    Sleep(4000);
+    return 0;
+}
+
+void ParseUrlAndMd5(string srcData, string& url, string& md5, string falg=";;")
+{
+    if (srcData.empty())
+        return;
+    size_t nPos = srcData.find(falg);
+    if (nPos != std::string::npos)
+    {
+        url = srcData.substr(0, nPos);
+        md5 = srcData.substr(nPos + falg.length());
+    }
+    else
+    {
+        url = srcData;
+        md5 = "";
+    }
+}
+
+void ByForce(bool& bNeedReboot)
+{
+    for (int i = 0; i < 3; i++)
+    {
+        if (!bNeedReboot)
+        {
+            int iRet = i;
+            bNeedReboot = (iRet == 1 ? true : false);
+        }
+        Sleep(1000);
+    }
+}
+
+
 std::mutex g_testmu;
 int g_num = 0;
 std::vector<int> vi;
 
 using namespace std;
 char* pBuf = nullptr;
+
+typedef int(FUN)(int i);
+class fcall
+{
+public:
+    int fun1(FUN f, int i)
+    {
+        return f(i);
+    }
+};
+
+int print(int i)
+{
+    printf("callback\n");
+    return i;
+}
+
+uint8_t UVCHeader[12] =
+{
+    0x0C,                           /* Header Length */
+    0x0C,                           /* Bit field header field */
+    0x00,0x00,0x00,0x00,            /* Presentation time stamp field */
+    0x00,0x00,0x00,0x00,0x00,0x00   /* Source clock reference field */
+};
+const static uint8_t UVC_HEADER_EOF = (uint8_t)(1 << 1);            /* End of frame indication */
+const static uint8_t UVC_HEADER_FRAME_ID = (uint8_t)(1 << 0);       /* Frame ID toggle bit */
+#define UVC_MAX_HEADER 12
+void add_UVCHeader(uint8_t* buf, bool eof)
+{
+    /* Copy header to buffer */
+    memcpy((uint8_t*)buf, (uint8_t*)UVCHeader, UVC_MAX_HEADER);
+
+    /* Check if last packet of the frame. */
+    if (eof)
+    {
+        /* Modify UVC header to toggle Frame ID */
+        UVCHeader[1] ^= UVC_HEADER_FRAME_ID;
+
+        /* Indicate End of Frame in the buffer */
+        buf[1] |= UVC_HEADER_EOF;
+    }
+
+}
 
 int getDataFromConsole() 
 {
@@ -1087,8 +1317,206 @@ abc\0efga";
     int len = wlen.length();
     int num = 0;
 #endif
+#if 0
+    uint8_t buffer_0[12] = { 0 };
+    uint8_t buffer_1[12] = { 0 };
+    add_UVCHeader(buffer_0, false);
+    add_UVCHeader(buffer_1, true);
+    fcall f;
+    printf("%d\n", f.fun1(print, 5));
+#endif
+#if 0
+    {
+        int nRet = 0;
+        char szParam[1024] = { 0 };
+        sprintf_s(szParam, 1024 - 1, "%s %s", "C:\\DTEN\\HardWare\\Driver\\devcon64.exe", "rescan");
+        nRet = system(szParam);
+        printf("devcon rescan done 0\n");
+        Sleep(2000);
+        printf("devcon update\n");
+        memset(szParam, 0, sizeof(szParam));
+        string strTemp = "\"USB\\VID_351E&PID_00C9\"";
+        sprintf_s(szParam, 1024 - 1, "%s %s %s %s", "C:\\DTEN\\HardWare\\Driver\\devcon64.exe", "update", "C:\\DTEN\\HardWare\\Driver\\dtensmart\\MutCamera.inf", strTemp.c_str());
+        printf("cmd param:[%s]\n", szParam);
+        nRet = system(szParam);
+        printf("install drv done, nRet:[%d], err=%d\n", nRet, GetLastError());
+        memset(szParam, 0, sizeof(szParam));
+        sprintf_s(szParam, 1024 - 1, "%s %s", "C:\\DTEN\\HardWare\\Driver\\devcon64.exe", "rescan");
+        system(szParam);
+        printf("devcon rescan done 1\n");
+        Sleep(2000);
+    }
+#endif
+#if 0
+    //char* endptr = nullptr;
+    //int _8 = strtol("08", &endptr, 16);
+    std::wstring info;
+    GetDeviDriverInfo(L"USB\\VID_351E&PID_00CF", info);
+#endif
+#if 0
+    FILETIME FileDate = { 0 };
+    SYSTEMTIME tm = { 0 };
+    ULARGE_INTEGER uDrvTimeStamp;
+    swscanf_s(L"1-5-2023", _T("%hu-%hu-%hu"), &tm.wMonth, &tm.wDay, &tm.wYear);
+    SystemTimeToFileTime(&tm, &FileDate);
+    uDrvTimeStamp.HighPart = FileDate.dwHighDateTime;
+    uDrvTimeStamp.LowPart = FileDate.dwLowDateTime;
+#endif
+#if 0
+    CAtlString strBinary = CREG::ReadRegBinaryValue(HKEY_LOCAL_MACHINE, L"SYSTEM\\CurrentControlSet\\Control\\Class\\{36fc9e60-c465-11cf-8056-444553540000}\\0030", L"DriverDateData");
+    ULONGLONG StampTime = CREG::ReadRegBinaryForSysTime(HKEY_LOCAL_MACHINE, L"SYSTEM\\CurrentControlSet\\Control\\Class\\{36fc9e60-c465-11cf-8056-444553540000}\\0030", L"DriverDateData");
+#endif
+#if 0
+    ByForce(g_need);
+#endif
+    //testFactory();
+    //decorator();
+    //observerTest();
+#if 0
+    string strtemp1 = "111;;222";
+    string strtemp2;
+    string strtemp3;
+    ParseUrlAndMd5(strtemp1, strtemp2, strtemp3);
+    ULONG U1 = 0;
+    ULONG U2 = 2;
+    SET_COMMAND(U1, U2);
+#endif
+#if 0
+    {
+        MyClass obj1(0), obj2(9);
+        MyClass obj3;
+        obj3 = obj1;    		//对象obj3已经创建，所以调用复制拷贝构造
+    }
+    {
+        MyClass obj1(1), obj2(2);
+        MyClass obj3 = obj1;    //对象obj3还没有创建，所以调用拷贝构造
+        system("pause");
+        return 0;
+    }
+#endif
+
+#if 0
+    GUID HidGuid;
+    HidD_GetHidGuid(&HidGuid);
+    getalldevice((LPGUID)&HidGuid, NULL);
+    printf("======================\n\n");
+
+    const GUID ImageClassGuid = { 0x6bdd1fc6L, 0x810f, 0x11d0,	{ 0xbe, 0xc7, 0x08, 0x00, 0x2b, 0xe2, 0x09, 0x2f } };
+    getalldevice((LPGUID)&ImageClassGuid, NULL);
+#endif
+    //bool bRet = CUtils::blCheckUdpPortListen(51452);
+#if 0
+    std::thread tCpu1([]() {
+        while (true)
+        {
+            //CCPU::testCPUUsage();
+            Sleep(3000);
+            //printf("\n");
+        }
+    });
+    tCpu1.detach();
+
+    std::thread tCpu2([]() {
+        //CCPU::getCpuUsage();
+    });
+    tCpu2.detach();
+#endif
+#if 0
+#define FLAG_REV_ "REV_"
+    string strhwid = "2333&Rev_8099";
+    size_t nPost = strhwid.find("Rev_");
+    string strRev = strhwid.substr(nPost + string(FLAG_REV_).length(), 14);
+    string str = strhwid.substr(nPost + string(FLAG_REV_).length()+1, 1);
+#endif
+    //CUtils::ModifyFileExtension(L"f:\\log\\", L"*.csv", L".log");
+#if 0
+    //删除section所有数据
+    BOOL br = WritePrivateProfileSection(L"section", 0, L"f:\\a.ini");
+    //删除section下所有键值对，保留section项
+    br = WritePrivateProfileSection(L"section", L"", L"f:\\a.ini");
+#endif
+#if 0
+    connectwlan();
+    //Wlan_GetAvailableNetworkList();
+    //test_wifi();
+#endif
+#if 0
+    while (true)
+    {
+        std::call_once(g_once_flag, test_once, 1);
+        Sleep(2000);
+    }
+#endif
+#if 0
+    DWORD recvThreadId = -1;
+    HANDLE m_recvThreadHandle = CreateThread(NULL, 0, ProcessRecvMsgThread, 0, 0, &recvThreadId);
+    //CloseHandle(m_recvThreadHandle);
+    // 创建处理数据线程
+    DWORD sendThreadId = -1;
+    HANDLE m_sendThreadHandle = CreateThread(NULL, 0, ProcessRecvMsgThread, 0, 0, &sendThreadId);
+    //CloseHandle(m_sendThreadHandle);
+    HANDLE hThreadHandle[2] = { m_sendThreadHandle, m_recvThreadHandle };
+    DWORD dw = WaitForMultipleObjects(2, hThreadHandle, true, 3000);
+#endif
+#if 0
+    TCHAR FullPath[MAX_PATH] = { 0 };
+    GetModuleFileName(0, FullPath, MAX_PATH);
+    ::PathRemoveExtension(FullPath);
+    wstring curPath = FullPath;
+#endif
+#if 0
+    string strT = teststr();
+    char szVer[128] = { 0 };
+    GetTouchVerEx("HID\VID_351E&PID_1194&REV_8110&MI_00&Col02", szVer, 128);
+#endif
+    //DeleteReg(L"SYSTEM\\CurrentControlSet\\Control\\DTEN", L"tp_detect");
+#if 0
+    ShellExecuteA(NULL, NULL, "notepad.exe", NULL, NULL, SW_SHOWMAXIMIZED);
+    Sleep(1500);
+    HWND pWnd = FindWindowA(NULL, "无标题 - 记事本");
+    if (pWnd)
+    {
+        LONG dx = 112 * (65535 / 1920);
+        LONG dy = 982 * (65535 / 1080);
+        SetForegroundWindow(pWnd);
+        INPUT m_InPut[2] = { 0 };
+        m_InPut[0].type = m_InPut[1].type = INPUT_MOUSE;
+        m_InPut[0].mi.dwFlags = MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE;
+        m_InPut[0].mi.dx = m_InPut[1].mi.dx = dx;
+        m_InPut[0].mi.dy = m_InPut[1].mi.dy = dy;
+        m_InPut[1].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
+        SendInput(sizeof(m_InPut) / sizeof(m_InPut[0]), m_InPut, sizeof(INPUT));
+    }
+#endif
+#if 0
+    int index = 0;
+    while (1)
+    {
+        //\\?\DISPLAY#AUO203D#4&3754407d&0&UID8388688#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}
+        DISPLAY_DEVICEA pDev;
+        ZeroMemory(&pDev, sizeof(DISPLAY_DEVICE));
+        pDev.cb = sizeof(DISPLAY_DEVICE);
+        if (!EnumDisplayDevicesA("\\\\.\\DISPLAY1", index, &pDev, EDD_GET_DEVICE_INTERFACE_NAME))
+        {
+            break;
+        }
+        if ((pDev.StateFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP) == DISPLAY_DEVICE_ATTACHED_TO_DESKTOP)
+        {
+            //0x000000dc4b3afa18 L"PCI\\VEN_8086&DEV_9A49&SUBSYS_3F1917AA&REV_01"
+            printf("%s\n", pDev.DeviceID);
+        }
+        else
+        {
+            printf("\\\\\n");
+        }
+        index++;
+    }
+#endif
+#if 0
+    EnumDisplayMonitors(NULL, NULL, Monitorenumproc1, 0);
+    //ListDeviceInstancePath(L"Monitor");
+#endif
 
     system("pause");
 	return 0;
 }
-

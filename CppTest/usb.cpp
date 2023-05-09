@@ -12,6 +12,8 @@
 #pragma comment(lib, "Cfgmgr32.lib")
 using namespace std;
 DEFINE_GUID(GUID_CLASS_I82930_MIC, 0x877fc334, 0xf128, 0x47f4, 0x90, 0x50, 0x7c, 0x3e, 0x78, 0x25, 0x95, 0x2b);
+//
+DEFINE_GUID(GUID_CLASS_MONITOR, 0x4d36e96e, 0xe325, 0x11ce, 0xbf, 0xc1, 0x08, 0x00, 0x2b, 0xe1, 0x03, 0x18);
 
 std::string ws2s(const std::wstring& ws)
 {
@@ -318,6 +320,71 @@ BOOL ListDeviceInstancePath(char* strVer)
     return bRet;
 }
 
+BOOL ListDeviceInstancePath(wchar_t* strclass)
+{
+    HDEVINFO hdev = INVALID_HANDLE_VALUE;
+    DWORD idx = 0;
+    GUID guid = GUID_CLASS_MONITOR;
+    BOOL bRet = FALSE;
+    BOOL nStatus;
+    DWORD dwSize = 0;
+
+    //获取由guid所指定类型的系统中已经安装的设备接口类集合的句柄
+    hdev = SetupDiGetClassDevs(&guid,
+        NULL,
+        NULL,
+        DIGCF_PRESENT | DIGCF_ALLCLASSES);
+
+    if (hdev == INVALID_HANDLE_VALUE)
+    {
+        LOG(ERROR) << "ERROR : Unable to enumerate device GetLastError is:" << hex << GetLastError();
+        return FALSE;
+    }
+
+    SP_DEVICE_INTERFACE_DATA  DeviceInterfaceData;
+    DeviceInterfaceData.cbSize = sizeof(DeviceInterfaceData);
+    //{4d36e96e-e325-11ce-bfc1-08002be10318}
+    for (idx = 0; SetupDiEnumDeviceInterfaces(hdev, NULL, NULL, idx, &DeviceInterfaceData); idx++)
+    {
+        nStatus = SetupDiGetDeviceInterfaceDetail(hdev, &DeviceInterfaceData, NULL, 0, &dwSize, NULL);
+
+        if (!dwSize)
+        {
+            bRet = FALSE;
+            LOG(ERROR) << "SetupDiGetDeviceInterfaceDetail GetLastError:" << GetLastError();
+            break;
+        }
+
+        PSP_DEVICE_INTERFACE_DETAIL_DATA_A pBuffer = (PSP_DEVICE_INTERFACE_DETAIL_DATA_A)malloc(dwSize);
+        ZeroMemory(pBuffer, sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA_A));
+        pBuffer->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA_A);
+
+        SP_DEVINFO_DATA DeviceInfoData = { sizeof(SP_DEVINFO_DATA) };
+        nStatus = SetupDiGetDeviceInterfaceDetailA(hdev, &DeviceInterfaceData, pBuffer, dwSize, &dwSize, &DeviceInfoData);
+
+        LOG(INFO) << "DeviceInterfaceData.Flags:[" << DeviceInterfaceData.Flags << "]";
+
+        if (!nStatus)
+        {
+            bRet = FALSE;
+            free(pBuffer);
+            LOG(ERROR) << "ERROR : SetupDiGetDeviceInterfaceDetailA fial, GetLastError:" << GetLastError();
+            break;
+        }
+
+        wprintf(L"%s\n", pBuffer->DevicePath);
+        //strVer = pBuffer->DevicePath;
+        bRet = TRUE;
+        //strcpy(instancePath, pBuffer->DevicePath);
+        //printf("DevicePath:%s\n", instancePath);
+        free(pBuffer);
+    }
+
+    SetupDiDestroyDeviceInfoList(hdev);
+
+    return bRet;
+}
+
 void ToUppercase(char* pData)
 {
     if (NULL == pData || 0 == strlen(pData))
@@ -609,7 +676,7 @@ BOOL GetDeviDriverInfo(wstring hwid, std::wstring& info)
             {
                 continue;
             }
-            printf("%d %ws\n", devIndex, HardId.c_str());
+            //printf("%d %ws\n", devIndex, HardId.c_str());
             if (HardId.find(hwid) != std::wstring::npos)
             {
                 printf("%d %ws\n", devIndex, HardId.c_str());
@@ -855,4 +922,90 @@ int PrintDevicesInfo()
     //  释放     
     SetupDiDestroyDeviceInfoList(hDevInfo);
     return 0;
+}
+
+#include <iomanip>
+string UnicodeToAscii(const wstring& wstr)
+{
+    int ansiiLen = WideCharToMultiByte(CP_ACP, 0, wstr.c_str(), -1, nullptr, 0, nullptr, nullptr);
+    char* pAssii = (char*)malloc(sizeof(char) * ansiiLen);
+    WideCharToMultiByte(CP_ACP, 0, wstr.c_str(), -1, pAssii, ansiiLen, nullptr, nullptr);
+    string ret_str = pAssii;
+    free(pAssii);
+    return ret_str;
+}
+int getalldevice(LPGUID pClsGuid, LPCTSTR lpEnumerator)
+{
+    int nRet = ERR_DEVICE_NO_FOUND, iIndex = 0, i = 1;
+    DWORD dwProblem = 0, dwDevState = 0;
+    ULARGE_INTEGER DrvDate_Cur = { 0 };
+    ULARGE_INTEGER DrvDate_New = { 0 };
+    TCHAR szHardWareID[512] = { 0 };
+    SP_DEVINFO_DATA DeviceInfoData;
+    SP_DRVINFO_DATA DrvInfoData;
+    wstring wstrVer;
+    string strVer;
+    std::vector<wstring>::iterator it;
+    bool IsDisableable = false, IsDisabled = false; 
+    HDEVINFO hDevInfo = SetupDiGetClassDevs(pClsGuid, lpEnumerator, NULL, DIGCF_ALLCLASSES | DIGCF_PRESENT);
+
+    if (hDevInfo == INVALID_HANDLE_VALUE)
+    {
+        printf("SetupDiGetClassDevs err, pClsGuid =%s \n", (char*)pClsGuid);
+        nRet = ERR_PARAM_ERROR;
+        goto param_err;
+    }
+
+    while (1)
+    {
+        
+        memset(szHardWareID, sizeof(szHardWareID), 0);
+        DeviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
+
+        if (!SetupDiEnumDeviceInfo(hDevInfo, iIndex, &DeviceInfoData))
+        {
+            std::cout << "dwGetCurDrvInfo::SetupDiEnumDeviceInfo err GetLastError:[0x" << hex << GetLastError() << "]" << std::endl;
+            break;
+        }
+
+        if (!SetupDiGetDeviceRegistryProperty(hDevInfo, &DeviceInfoData, SPDRP_HARDWAREID,
+            NULL, (PBYTE)szHardWareID, sizeof(szHardWareID) - 2, NULL))
+        {
+            iIndex++;
+            continue;
+        }
+        iIndex++;
+        wstring wstrHardid = szHardWareID;
+        printf("%s\n", UnicodeToAscii(wstrHardid).c_str());
+
+        if (CM_Get_DevNode_Status(&dwDevState, &dwProblem, DeviceInfoData.DevInst, 0) != CR_SUCCESS || dwProblem != 0)
+        {
+            nRet = ERR_DEVICE_NEED_REPAIR;
+            std::cout << "abnormal dwDevState:[0x" << setw(8) << hex << dwDevState
+                << "], dwProblem:[0x" << setw(8) << dwProblem << "], nRet:" << nRet << std::endl;
+
+            if (CM_PROB_DISABLED == dwProblem)
+            {
+                std::cout << "CM_PROB_DISABLED" << std::endl;
+            }
+            else
+            {
+
+                std::cout << "Need ReInstall, Error:" << GetLastError() << std::endl;
+            }
+        }
+        else
+        {
+            std::cout << "normal dwDevState:[0x" << setw(8) << hex << dwDevState
+                << "], dwProblem:[0x" << dwProblem << "], nRet:" << nRet << std::endl;
+        }
+
+        printf("----------------------------\n\n");
+    }
+
+
+    
+
+param_err:
+    return nRet;
 }

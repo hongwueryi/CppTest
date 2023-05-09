@@ -25,8 +25,10 @@ int dwGetCurDrvInfo2(LPGUID pClsGuid, LPCTSTR lpEnumerator, std::vector<std::wst
 int GetDrvStatusByName(std::wstring FriendlyName);
 
 BOOL ListDeviceInstancePath(char* strVer);
+BOOL ListDeviceInstancePath(wchar_t* strclass);
 int getCurMicVer(char* pOutVer, int nBufLen);
 
 std::string ws2s(const std::wstring& ws);
 BOOL GetDeviDriverInfo(std::wstring hwid, std::wstring& info);
 int PrintDevicesInfo();
+int getalldevice(LPGUID pClsGuid, LPCTSTR lpEnumerator);

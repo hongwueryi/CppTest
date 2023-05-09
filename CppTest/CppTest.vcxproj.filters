@@ -14,6 +14,16 @@
     <ClCompile Include="SerialPort\SerialPort.cpp">
       <Filter>SerialPort</Filter>
     </ClCompile>
+    <ClCompile Include="commonUtil.cpp" />
+    <ClCompile Include="cpu.cpp">
+      <Filter>hardware</Filter>
+    </ClCompile>
+    <ClCompile Include="wifi.cpp">
+      <Filter>wifi</Filter>
+    </ClCompile>
+    <ClCompile Include="bluetooth\bluetooth.cpp">
+      <Filter>bluetooth</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="method.h" />
@@ -28,6 +38,22 @@
     <ClInclude Include="SerialPort\SerialPort.h">
       <Filter>SerialPort</Filter>
     </ClInclude>
+    <ClInclude Include="commonUtil.h" />
+    <ClInclude Include="factory.h">
+      <Filter>designermode</Filter>
+    </ClInclude>
+    <ClInclude Include="decoratormode.h">
+      <Filter>designermode</Filter>
+    </ClInclude>
+    <ClInclude Include="observe.h">
+      <Filter>designermode</Filter>
+    </ClInclude>
+    <ClInclude Include="cpu.h">
+      <Filter>hardware</Filter>
+    </ClInclude>
+    <ClInclude Include="wifi.h">
+      <Filter>wifi</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CppTest.rc" />
@@ -41,6 +67,18 @@
     </Filter>
     <Filter Include="SerialPort">
       <UniqueIdentifier>{07937481-083e-47ae-b670-ef47c8e1c062}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="designermode">
+      <UniqueIdentifier>{eed48d33-65d8-4c81-abea-94367ad67fcc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="hardware">
+      <UniqueIdentifier>{21d00ff5-8f53-493c-ae02-8dfaff47739c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="wifi">
+      <UniqueIdentifier>{9fad2f80-7f80-457f-905e-830d71bb2b3f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="bluetooth">
+      <UniqueIdentifier>{146c6f9e-a1f7-4ac8-b2fa-d53b79103ab4}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

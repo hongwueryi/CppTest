@@ -5,6 +5,8 @@
 #include <future>
 #include <memory>
 #include <condition_variable>
+#include <string>
+#include <mutex>
 using namespace std::chrono;
 std::mutex g_mutex;
 
@@ -475,16 +477,99 @@ int main11()
 	return 0;
 }
 
-int main22()
+template<typename T>
+class threadsafe_queue1
+{
+private:
+	mutable std::mutex mut;
+	std::queue<T> data_queue;
+	std::condition_variable data_cond;
+public:
+	threadsafe_queue1(){}
+	void push(T new_value)
+	{
+		std::lock_guard<std::mutex> lk(mut);
+		data_queue.push(std::move(new_value));
+		data_cond.notify_one();
+	}
+	void wait_and_pop(T& value)
+	{
+		std::unique_lock<std::mutex> lk(mut);
+		data_cond.wait(lk, [this] {return !data_queue.empty(); });
+		value = std::move(data_queue.front());
+		data_queue.pop();
+	}
+	std::shared_ptr<T> wait_and_pop()
+	{
+		std::unique_lock<std::mutex> lk(mut);
+		data_cond.wait(lk, [this] {return !data_queue.empty(); });
+		std::shared_ptr<T> res(std::make_shared<T>(std::move(data_queue.front())));
+		data_queue.pop();
+		return res;
+	}
+	bool try_pop(T& value)
+	{
+		std::lock_guard<std::mutex> lk(mut);
+		if (data_queue.empty())
+			return false;
+		value = std::move(data_queue.front());
+		data_queue.pop();
+		return true;
+	}
+	std::shared_ptr<T> try_pop()
+	{
+		std::lock_guard<std::mutex> lk(mut);
+		if (data_queue.empty())
+			return std::shared_ptr<T>();
+		std::shared_ptr<T> res(
+			std::make_shared<T>(std::move(data_queue.front())));
+		data_queue.pop();
+		return res;
+	}
+	bool empty() const
+	{
+		std::lock_guard<std::mutex> lk(mut);
+		return data_queue.empty();
+	}
+};
+
+int ilam = []() {
+	printf("before main.\n");
+	return 0;
+}();
+auto ilam2 = []() {
+	printf("before main.\n");
+	return 0;
+};
+
+int main111()
 {
 
+	decltype(ilam2)var;
+	printf("enter main.\n");
+#if 1
+	std::shared_ptr<std::string> p1 = std::make_shared<std::string>("111");
+	std::shared_ptr<std::string> p3(new std::string("123"));//#4
+	std::shared_ptr<std::string> p4;//#5
+	std::unique_ptr<std::string> p5(new std::string("456"));
+	std::shared_ptr<std::string>p6 = std::move(p5);
+	std::weak_ptr<std::string>p7 = p6;
+	std::weak_ptr<std::string>p8(p6);
+	p4 = p3;
+	std::string str = *p4.get(); //µÈÍ¬ÓÚstd::string str = *p4;
+	//std::string str2 = *p5.get();
+	std::string str3 = *p6.get();
+	std::string str4 = *(p7.lock());
+	std::string str5 = *(p8.lock());
+#endif
+
+#if 0
 	std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-	
 	Sleep(3000);
 	std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 	std::chrono::duration<uint64_t> time_span = std::chrono::duration_cast<duration<uint64_t>>(t2 - t1);
 	uint64_t dspan = time_span.count();  //seconds
-	
+#endif
 
 #if 0
 	std::lock(tlock1_mux, tlock2_mux);

@@ -212,3 +212,5 @@ int test2()
     }
     CloseHandle(hSnap);
 }
+
+

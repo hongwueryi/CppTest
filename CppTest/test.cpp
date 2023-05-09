@@ -13,209 +13,13 @@
 #include "ExceptionReport.h"
 #include "method.h"
 
+#include <tlhelp32.h>
+
 CExceptionReport report;
 using namespace std;
-typedef struct APP_INFOS {
-    CString DisplayName;
-    CString FullPath;
-    __int64 last_time_;
-    __int64 last_system_time_;
-    int CPU_Usage;
-}App_Infos;
+
 
 FILE* fp = nullptr;
-// 时间转换
-static __int64 file_time_2_utc(const FILETIME* ftime)
-{
-    LARGE_INTEGER li;
-
-    li.LowPart = ftime->dwLowDateTime;
-    li.HighPart = ftime->dwHighDateTime;
-    return li.QuadPart;
-}
-
-// 获得CPU的核数
-static int get_processor_number()
-{
-    SYSTEM_INFO info;
-    GetSystemInfo(&info);
-    return (int)info.dwNumberOfProcessors;
-}
-
-// 获取进程CPU占用
-int get_cpu_usage(int pid)
-{
-    //cpu数量
-    static int processor_count_ = -1;
-    //上一次的时间
-    static __int64 last_time_ = 0;
-    static __int64 last_system_time_ = 0;
-
-    FILETIME now;
-    FILETIME creation_time;
-    FILETIME exit_time;
-    FILETIME kernel_time;
-    FILETIME user_time;
-    __int64 system_time;
-    __int64 time;
-    __int64 system_time_delta;
-    __int64 time_delta;
-
-    int cpu = -1;
-
-    if (processor_count_ == -1)
-    {
-        processor_count_ = get_processor_number();
-    }
-
-    GetSystemTimeAsFileTime(&now);
-
-    HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, false, pid);
-    if (!GetProcessTimes(hProcess, &creation_time, &exit_time, &kernel_time, &user_time))
-    {
-        return -1;
-    }
-    system_time = (file_time_2_utc(&kernel_time) + file_time_2_utc(&user_time)) / processor_count_;
-    time = file_time_2_utc(&now);
-
-    if ((last_system_time_ == 0) || (last_time_ == 0))
-    {
-        last_system_time_ = system_time;
-        last_time_ = time;
-        return -1;
-    }
-
-    system_time_delta = system_time - last_system_time_;
-    time_delta = time - last_time_;
-
-    if (time_delta == 0)
-        return -1;
-
-    cpu = (int)((system_time_delta * 100 + time_delta / 2) / time_delta);
-    last_system_time_ = system_time;
-    last_time_ = time;
-    return cpu;
-}
-
-int get_cpu_usage(int pid, __int64& last_time_, __int64& last_system_time_)
-{
-    //cpu数量
-    static int processor_count_ = -1;
-    //上一次的时间
-    //static __int64 last_time_ = 0;
-    //static __int64 last_system_time_ = 0;
-
-    FILETIME now;
-    FILETIME creation_time;
-    FILETIME exit_time;
-    FILETIME kernel_time;
-    FILETIME user_time;
-    __int64 system_time;
-    __int64 time;
-    __int64 system_time_delta;
-    __int64 time_delta;
-
-    int cpu = -1;
-
-    if (processor_count_ == -1)
-    {
-        processor_count_ = get_processor_number();
-    }
-
-    GetSystemTimeAsFileTime(&now);
-
-    HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, false, pid);
-    if (!GetProcessTimes(hProcess, &creation_time, &exit_time, &kernel_time, &user_time))
-    {
-        return -1;
-    }
-    system_time = (file_time_2_utc(&kernel_time) + file_time_2_utc(&user_time)) / processor_count_;
-    time = file_time_2_utc(&now);
-
-    if ((last_system_time_ == 0) || (last_time_ == 0))
-    {
-        last_system_time_ = system_time;
-        last_time_ = time;
-        return -1;
-    }
-
-    system_time_delta = system_time - last_system_time_;
-    time_delta = time - last_time_;
-
-    if (time_delta == 0)
-        return -1;
-
-    cpu = (int)((system_time_delta * 100 + time_delta / 2) / time_delta);
-    last_system_time_ = system_time;
-    last_time_ = time;
-    return cpu;
-}
-
-#include <tlhelp32.h>
-std::map<int, App_Infos> ProcessList;
-int testCPUUsage()
-{
-	HANDLE hSnap = ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-	if (INVALID_HANDLE_VALUE == hSnap)
-		return 0;
-
-	PROCESSENTRY32 processEntry = { sizeof(PROCESSENTRY32) };
-	BOOL toContinue = ::Process32First(hSnap, &processEntry);
-	HANDLE hProcess = INVALID_HANDLE_VALUE;
-
-
-	while (toContinue)
-	{
-		DWORD pid = processEntry.th32ProcessID;
-		hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, 0, pid);
-		if (hProcess == INVALID_HANDLE_VALUE)
-		{
-			continue;
-		}
-
-		__int64 last_time_ = 0;
-		__int64 last_system_time_ = 0;
-		TCHAR fullPath[MAX_PATH];
-		DWORD len = MAX_PATH;
-		get_cpu_usage(pid, last_time_, last_system_time_);
-		App_Infos TempInfos;
-		TempInfos.last_time_ = last_time_;
-		TempInfos.last_system_time_ = last_system_time_;
-		if (QueryFullProcessImageName(hProcess, 0, fullPath, &len))
-		{
-			TempInfos.FullPath = fullPath;
-		}
-		TempInfos.DisplayName = processEntry.szExeFile;
-		ProcessList.insert(std::make_pair(pid, TempInfos));
-
-		CloseHandle(hProcess);
-		toContinue = ::Process32Next(hSnap, &processEntry);
-	}
-	CloseHandle(hSnap);
-
-	Sleep(1000);
-
-	std::map<int, App_Infos>::iterator it;
-	for (it = ProcessList.begin(); it != ProcessList.end(); ++it)
-	{
-		hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, 0, it->first);
-		if (hProcess == INVALID_HANDLE_VALUE)
-		{
-			continue;
-		}
-
-		int percent = get_cpu_usage(it->first, it->second.last_time_, it->second.last_system_time_);
-		it->second.CPU_Usage = percent;
-		if ((percent != -1) && (percent != 0))
-		{
-			wprintf(L"pid=%d,percent=%d,name=%s\n\n", it->first, percent, it->second.DisplayName.GetBuffer(0));
-			//fwprintf(fp, L"pid=%d,percent=%d,name=%s\n\n", it->first, percent, it->second.DisplayName.GetBuffer(0));
-			it->second.DisplayName.ReleaseBuffer();
-		}
-	}
-
-	return 0;
-}
 
 #if 0
 int test()
@@ -2137,7 +1941,7 @@ void doit(void* arg)
 
 int main11()
 {
-	GetDeviceInfo();
+	//GetDeviceInfo();
 	//std::mem_fn(&std::thread::join);
 #if 0
 #define _CRTDBG_MAP_ALLOC
@@ -2358,7 +2162,8 @@ int main11()
 		//break;
 		
 	}
-	//EnumDisplayMonitors(GetWindowDC(NULL), NULL, Monitorenumproc, NULL);
+	//EnumDisplay
+    s(GetWindowDC(NULL), NULL, Monitorenumproc, NULL);
 #endif
 #if 0
 	bool enable = false;

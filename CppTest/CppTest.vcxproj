@@ -150,6 +150,7 @@
       <SDLCheck>false</SDLCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalIncludeDirectories>$(SolutionDir)libsocket</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -160,16 +161,25 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="commonUtil.h" />
+    <ClInclude Include="cpu.h" />
+    <ClInclude Include="decoratormode.h" />
     <ClInclude Include="ExceptionReport.h" />
+    <ClInclude Include="factory.h" />
     <ClInclude Include="method.h" />
+    <ClInclude Include="observe.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SerialPort\EnumSerial.h" />
     <ClInclude Include="SerialPort\SerialPort.h" />
     <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="usb.h" />
     <ClInclude Include="virtualkey.h" />
+    <ClInclude Include="wifi.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="bluetooth\bluetooth.cpp" />
+    <ClCompile Include="commonUtil.cpp" />
+    <ClCompile Include="cpu.cpp" />
     <ClCompile Include="ExceptionReport.cpp" />
     <ClCompile Include="MyQueue.cpp" />
     <ClCompile Include="serialportcomm.cpp" />
@@ -181,6 +191,7 @@
     <ClCompile Include="usb.cpp">
       <RuntimeLibrary Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
+    <ClCompile Include="wifi.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CppTest.rc" />

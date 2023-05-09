@@ -474,30 +474,15 @@ bool GainDeviceInfo(std::string result)
     
     return true;
 }
-#include 
+#include <atlpath.h>
 int main()
-{
-    string strZoomx861 = "C:\\Program Files(x86)\\a.exe";
-    if (PathFileExistsA(strZoomx861.c_str()))
-    {
-       
-    }
-    if (GetFileAttributesA(strZoomx861.c_str()) != INVALID_FILE_ATTRIBUTES)
-    {
-        
-    }
-    string strZoomx641 = "C:\\Program Files\\DTENOTA.exe";
-    if (PathFileExistsA(strZoomx641.c_str()))
-    {
-       
-    }
-    GainDeviceInfo("1-2-3-4-5");
-    system("pause");
-    return 0;
-#if 0
+{ 
+#if 1
+    std::vector<wstring> vec22;
+    CXmlManager::GetInstance().GetNodeValue("CHECKDEVICE", "MIC", "MIC_NODE_1", vec22);
     wstring wst = L"123";
     wstring GRANDPNODE;
-    CXmlManager::GetInstance().GetNodeAttribute("CHECKDEVICE", "MIC", "MIC_NODE_3", "GRANDPNODE", GRANDPNODE);
+    //CXmlManager::GetInstance().GetNodeAttribute("CHECKDEVICE", "MIC", "MIC_NODE_3", "GRANDPNODE", GRANDPNODE);
     vector<string> vTPNodeName;
     vector<string>::iterator itTP;
     CXmlManager::GetInstance().GetAllNodeName("SETUPFIRMWARE", "TOUCH", vTPNodeName);

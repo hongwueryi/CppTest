@@ -3,8 +3,9 @@
 
 #include "stdafx.h"
 #include "Win32Project.h"
-
+#include <string>
 #define MAX_LOADSTRING 100
+#include <thread>
 
 // 全局变量: 
 HINSTANCE hInst;                                // 当前实例
@@ -130,6 +131,7 @@ LRESULT CALLBACK hookproc_ll(int nCode, WPARAM wParam, LPARAM lParam)
 	return CallNextHookEx(hook_ll, nCode, wParam, lParam);
 }
 
+int g_alpha = 0;
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
                      _In_ LPWSTR    lpCmdLine,
@@ -138,6 +140,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
+    std::wstring cmd = lpCmdLine;
+    if (cmd.find(L"255") != std::string::npos)
+    {
+        g_alpha = 255;
+    }
 	//Sleep(5000);
     // TODO: 在此放置代码。
     // 初始化全局字符串
@@ -245,14 +252,31 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    UpdateWindow(hWnd);
    SetWindowPos(hWnd,
        HWND_TOPMOST,
-       100,
-	   100,
-       600,
-       300,
-       SWP_NOZORDER | SWP_NOACTIVATE);
+       0,
+	   0,
+       1920,
+       1080,
+       SWP_NOACTIVATE);
 //    ShowWindow(hWnd2, SW_SHOW);
 //    UpdateWindow(hWnd2);
-   
+   LONG nRet = ::GetWindowLong(hWnd, GWL_EXSTYLE);
+   nRet = nRet | WS_EX_LAYERED;
+   ::SetWindowLong(hWnd, GWL_EXSTYLE, nRet);
+   ::SetLayeredWindowAttributes(hWnd, 0, g_alpha, LWA_ALPHA);    // 255设置不透明  0设置透明
+   std::thread tSend([]() {
+       //MessageBox(NULL, 0, 0, MB_OK);
+       Sleep(10000);
+       LONG dx = 97 * (65535 / 1920);
+       LONG dy = 1018 * (65535 / 1080);
+       INPUT m_InPut[2] = { 0 };
+       m_InPut[0].type = m_InPut[1].type = INPUT_MOUSE;
+       m_InPut[0].mi.dwFlags = MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE;
+       m_InPut[0].mi.dx = m_InPut[1].mi.dx = dx;
+       m_InPut[0].mi.dy = m_InPut[1].mi.dy = dy;
+       m_InPut[1].mi.dwFlags = MOUSEEVENTF_LEFTUP;
+       SendInput(sizeof(m_InPut) / sizeof(m_InPut[0]), m_InPut, sizeof(INPUT));
+       });
+   tSend.detach();
    return TRUE;
 }
 #include <shellapi.h>
@@ -327,7 +351,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		int w = prcNewWindow->right - prcNewWindow->left;
 		int h = prcNewWindow->bottom - prcNewWindow->top;
 		SetWindowPos(hWnd,
-			NULL,
+			HWND_TOPMOST,
 			prcNewWindow->left,
 			prcNewWindow->top,
 			600,

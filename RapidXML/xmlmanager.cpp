@@ -1,4 +1,5 @@
 #include <string>
+#include <string>
 #include "rapidxml.hpp"
 #include "rapidxml_utils.hpp"
 #include "xmlmanager.h"
