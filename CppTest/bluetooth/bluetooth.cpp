@@ -18,12 +18,15 @@
 //      for command-line-examples and detailed explanation about all options.
 //
 
+#include "../commonUtil.h"
 #include <stdio.h>
 #include <initguid.h>
 #include <winsock2.h>
 #include <ws2bth.h>
 #include <strsafe.h>
 #include <intsafe.h>
+#include <Windows.h>
+
 
 
 // {B62C4E8D-62CC-404b-BBBF-BF3E3BBB1374}
@@ -57,12 +60,12 @@ ULONG ParseCmdLine(_In_ int argc, _In_reads_(argc) wchar_t* argv[]);
 
 
 
-int _cdecl __wmain(_In_ int argc, _In_reads_(argc)wchar_t* argv[])
+int main_bth(_In_ int argc, _In_reads_(argc)wchar_t* argv[])
 {
     ULONG       ulRetCode = CXN_SUCCESS;
     WSADATA     WSAData = { 0 };
     SOCKADDR_BTH RemoteBthAddr = { 0 };
-
+#if 0
     //
     // Parse the command line
     //
@@ -76,7 +79,9 @@ int _cdecl __wmain(_In_ int argc, _In_reads_(argc)wchar_t* argv[])
     else if (CXN_SUCCESS != ulRetCode) {
         wprintf(L"-FATAL- | Error in parsing command line\n");
     }
-
+#else
+    wcscpy_s(g_szRemoteName, 10, L"htest");
+#endif
     //
     // Ask for Winsock version 2.2.
     //
@@ -256,6 +261,7 @@ ULONG NameToBthAddr(_In_ const LPWSTR pszRemoteName, _Out_ PSOCKADDR_BTH pRemote
                     //
                     // Compare the name to see if this is the device we are looking for.
                     //
+                    printf("%s\n", CUtils::UnicodeToAscii(pWSAQuerySet->lpszServiceInstanceName));
                     if ((pWSAQuerySet->lpszServiceInstanceName != NULL) &&
                         (CXN_SUCCESS == _wcsicmp(pWSAQuerySet->lpszServiceInstanceName, pszRemoteName))) {
                         //

@@ -196,6 +196,21 @@ namespace CUtils
         return ret_str;
     }
 
+    std::string UnicodeToAscii(const std::wstring& wstr)
+    {
+        std::string ret_str = "";
+        int ansiiLen = WideCharToMultiByte(CP_ACP, 0, wstr.c_str(), -1, nullptr, 0, nullptr, nullptr);
+        char* pAssii = (char*)malloc(sizeof(char) * ansiiLen);
+        WideCharToMultiByte(CP_ACP, 0, wstr.c_str(), -1, pAssii, ansiiLen, nullptr, nullptr);
+        if (nullptr != pAssii)
+        {
+            ret_str = pAssii;
+        }
+        free(pAssii);
+
+        return ret_str;
+    }
+
     std::wstring Utf8ToUnicode(const std::string& str)
     {
         std::wstring ret_str = L"";
@@ -207,6 +222,21 @@ namespace CUtils
             ret_str = pUnicode;
         }
         
+        free(pUnicode);
+        return ret_str;
+    }
+
+    std::wstring AsciiToUnicode(const std::string& str)
+    {
+        std::wstring ret_str = L"";
+        int unicodeLen = MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, nullptr, 0);
+        wchar_t* pUnicode = (wchar_t*)malloc(sizeof(wchar_t) * unicodeLen);
+        MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, pUnicode, unicodeLen);
+        if (nullptr != pUnicode)
+        {
+            ret_str = pUnicode;
+        }
+
         free(pUnicode);
         return ret_str;
     }

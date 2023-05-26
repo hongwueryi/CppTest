@@ -13,7 +13,9 @@ namespace CREG
 namespace CUtils
 {
     std::string UnicodeToUtf8(const std::wstring& wstr);
+    std::string UnicodeToAscii(const std::wstring& wstr);
     std::wstring Utf8ToUnicode(const std::string& str);
+    std::wstring AsciiToUnicode(const std::string& str);
     bool blCheckUdpPortListen(unsigned int nPort);
     BOOL ModifyFileExtension(std::wstring path, std::wstring srcType, std::wstring destType);
 }
