@@ -1519,7 +1519,7 @@ abc\0efga";
     //ListDeviceInstancePath(L"Monitor");
 #endif
     //CMonitorTP::GetInstance()->AssociateTPwithMonitor();
-    getalldevice(nullptr, L"PCI");
+    //getalldevice(nullptr, L"PCI");
     system("pause");
 	return 0;
 }

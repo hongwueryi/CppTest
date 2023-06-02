@@ -57,6 +57,148 @@ ULONG RunServerMode(_In_ int iMaxCxnCycles = 1);
 void  ShowCmdLineHelp(void);
 ULONG ParseCmdLine(_In_ int argc, _In_reads_(argc) wchar_t* argv[]);
 
+#if 0
+#include <windows.h>
+#include <bluetoothapis.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int main(int argc, char** argv)
+{
+    // 初始化 Bluetooth API
+    DWORD result = 0;
+    result = BluetoothSetServiceState(NULL, &GUID_NULL, BLUETOOTH_SERVICE_DISABLE);
+    if (result != ERROR_SUCCESS) {
+        printf("Error initializing Bluetooth API: %d\n", result);
+        return 1;
+    }
+
+    // 获取本地蓝牙适配器
+    BLUETOOTH_FIND_RADIO_PARAMS params = { sizeof(BLUETOOTH_FIND_RADIO_PARAMS) };
+    HANDLE hRadio = NULL;
+    HBLUETOOTH_RADIO_FIND hFind = BluetoothFindFirstRadio(&params, &hRadio);
+    if (hFind == NULL) {
+        printf("Error finding Bluetooth radio: %d\n", GetLastError());
+        return 1;
+    }
+
+    // 打开本地蓝牙适配器
+    result = BluetoothEnableDiscovery(hRadio, TRUE);
+    if (result != ERROR_SUCCESS) {
+        printf("Error enabling Bluetooth discovery: %d\n", result);
+        return 1;
+    }
+
+    // 搜索蓝牙设备
+    BLUETOOTH_DEVICE_SEARCH_PARAMS searchParams = { sizeof(BLUETOOTH_DEVICE_SEARCH_PARAMS) };
+    searchParams.fIssueInquiry = TRUE;
+    searchParams.fReturnAuthenticated = TRUE;
+    searchParams.fReturnRemembered = TRUE;
+    searchParams.fReturnUnknown = TRUE;
+    searchParams.cTimeoutMultiplier = 2;
+    HBLUETOOTH_DEVICE_FIND hDeviceFind = BluetoothFindFirstDevice(&searchParams, &deviceInfo);
+    if (hDeviceFind == NULL) {
+        printf("Error finding Bluetooth device: %d\n", GetLastError());
+        return 1;
+    }
+
+    // 连接蓝牙设备
+    BLUETOOTH_DEVICE_INFO deviceInfo = { sizeof(BLUETOOTH_DEVICE_INFO) };
+    deviceInfo.Address.ullLong = 0x001122334455; // 用目标设备的 MAC 地址替换这个数字
+    deviceInfo.ulClassofDevice = 0x200404; // 替换为目标设备的类别码
+    deviceInfo.szName[0] = '\0';
+    deviceInfo.ulFlags = 0;
+    result = BluetoothAuthenticateDevice(NULL, hRadio, &deviceInfo, NULL, 0);
+    if (result != ERROR_SUCCESS) {
+        printf("Error authenticating Bluetooth device: %d\n", result);
+        return 1;
+    }
+    SOCKADDR_BTH
+
+    // 创建蓝牙端口
+    BLUETOOTH_DEVICE_INFO_EX deviceInfoEx = { sizeof(BLUETOOTH_DEVICE_INFO_EX) };
+    deviceInfoEx.fAuthenticated = TRUE;
+    deviceInfoEx.hRadio = hRadio;
+    memcpy(&deviceInfoEx.Address, &deviceInfo.Address, sizeof(BLUETOOTH_ADDRESS));
+    HANDLE hPort = BluetoothCreateFile(&deviceInfoEx, &deviceInfo.ServiceClassId, &deviceInfo.PortName, NULL);
+    if (hPort == NULL) {
+        printf("Error creating Bluetooth port: %d\n", GetLastError());
+        return 1;
+    }
+
+    // 发送数据
+    char message[] = "Hello, Bluetooth!";
+    DWORD bytesWritten = 0;
+    result = WriteFile(hPort, message, sizeof(message), &bytesWritten, NULL);
+    if (result != ERROR_SUCCESS || bytesWritten != sizeof(message)) {
+        printf("Error sending message: %d\n", GetLastError());
+        return 1;
+    }
+
+    // 关闭蓝牙端口
+    CloseHandle(hPort);
+
+    // 关闭蓝牙设备搜索句柄
+    BluetoothFindDeviceClose(hDeviceFind);
+
+    // 关闭蓝牙适配器搜索句柄
+    BluetoothFindRadioClose(hFind);
+
+    // 关闭 Bluetooth API
+    result = BluetoothSetServiceState(NULL, &GUID_NULL, BLUETOOTH_SERVICE_DISABLE);
+    if (result != ERROR_SUCCESS) {
+        printf("Error closing Bluetooth API: %d\n", result);
+        return 1;
+    }
+
+    return 0;
+}
+#endif
+#if 0
+{
+    BOOL   bRetValue = FALSE;
+    SOCKET uSocket = INVALID_SOCKET;
+
+    SOCKADDR_BTH stSockBth = { 0 };
+    WSADATA      stWsaData = { 0 };
+
+    if (ERROR_SUCCESS == WSAStartup(MAKEWORD(2, 2), &stWsaData))
+    {
+        uSocket = socket(AF_BTH, SOCK_STREAM, BTHPROTO_RFCOMM);
+        if (uSocket != INVALID_SOCKET)
+        {
+            memset(&stSockBth, 0, sizeof(stSockBth));
+            stSockBth.btAddr = ullAddr;
+            stSockBth.addressFamily = AF_BT;
+
+            for (iChannel = 1; iChannel < 32; iChannel++)
+            {
+                stSockBth.port = iChannel & 0xff;
+                if (connect(uSocket, (SOCKADDR*)&stSockBth, sizeof(stSockBth)))
+                {
+                    continue;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            closesocket(uSocket);
+            WSACleanup();
+
+            if (iChannel < 32)
+            {
+                bRetValue = TRUE;
+            }
+        }
+        else
+        {
+            WSACleanup();
+        }
+    }
+}
+#endif
 
 
 
