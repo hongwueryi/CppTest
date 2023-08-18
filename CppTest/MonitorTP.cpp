@@ -10,7 +10,7 @@
 
 //std::mutex g_mux_monitor;
 std::map<int, std::wstring> g_MonitorMap;
-
+//static CMonitorTP pMonTP;  //编译报错，构造私有
 CMonitorTP* CMonitorTP::GetInstance()
 {
     static CMonitorTP pMonTP;

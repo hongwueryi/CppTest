@@ -131,8 +131,9 @@ LRESULT CALLBACK hookproc_ll(int nCode, WPARAM wParam, LPARAM lParam)
 	return CallNextHookEx(hook_ll, nCode, wParam, lParam);
 }
 
-int g_alpha = 0;
-int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
+int g_alpha = 255;
+
+int APIENTRY wWinMain11(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
                      _In_ LPWSTR    lpCmdLine,
                      _In_ int       nCmdShow)
@@ -184,6 +185,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     // 主消息循环: 
     while (GetMessage(&msg, nullptr, 0, 0))
     {
+        int nummsg = WM_USER + 1025;
+        if (msg.message == WM_USER + 1025)
+            int num = 0;
         if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
         {
             TranslateMessage(&msg);
@@ -194,7 +198,30 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     return (int) msg.wParam;
 }
 
+int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
+    _In_opt_ HINSTANCE hPrevInstance,
+    _In_ LPWSTR    lpCmdLine,
+    _In_ int       nCmdShow)
+{
+    UNREFERENCED_PARAMETER(hPrevInstance);
+    UNREFERENCED_PARAMETER(lpCmdLine);
 
+    std::thread t(wWinMain11, hInstance, hPrevInstance, lpCmdLine, nCmdShow);
+    t.detach();
+    Sleep(2000);
+        while (true)
+        {
+            //MessageBox(NULL, 0, 0, MB_OK);
+            //WM_USER + 1025
+            BOOL Bret;
+            if (NULL != hWnd)
+                Bret = SendMessage(hWnd, WM_USER + 1025, 0, 0);
+            else
+                break;
+            Sleep(3000);
+        }
+
+}
 
 //
 //  函数: MyRegisterClass()
@@ -250,13 +277,13 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
    ShowWindow(hWnd, SW_SHOW);
    UpdateWindow(hWnd);
-   SetWindowPos(hWnd,
+   /*SetWindowPos(hWnd,
        HWND_TOPMOST,
        0,
 	   0,
        1920,
        1080,
-       SWP_NOACTIVATE);
+       SWP_NOACTIVATE);*/
 //    ShowWindow(hWnd2, SW_SHOW);
 //    UpdateWindow(hWnd2);
    LONG nRet = ::GetWindowLong(hWnd, GWL_EXSTYLE);
@@ -342,6 +369,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		//MessageBox(NULL, L"shift+ctrl+f22", L"ok", MB_OK);
 		recordscreen();
 		break;
+    case WM_USER + 1025:
+        MessageBox(NULL, L"shift+ctrl+f22", L"ok", MB_OK);
+        break;
 	case WM_DPICHANGED:
 	{
 		int dpi = HIWORD(wParam);

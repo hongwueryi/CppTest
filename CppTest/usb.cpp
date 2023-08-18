@@ -256,6 +256,56 @@ int GetDrvStatusByName(std::wstring FriendlyName)
     return nRet;
 }
 
+
+BOOL USBEnumDevice(OUT PTCHAR pDeviceName, IN int instance)
+{
+    HDEVINFO info = SetupDiGetClassDevs(NULL, NULL, NULL, DIGCF_PRESENT |  DIGCF_ALLCLASSES);
+    if (info == INVALID_HANDLE_VALUE)
+    {
+        printf("No HDEVINFO available for this GUID\n");
+        return FALSE;
+    }
+
+    // Get interface data for the requested instance
+    SP_INTERFACE_DEVICE_DATA ifdata;
+    ifdata.cbSize = sizeof(ifdata);
+    if (!SetupDiEnumDeviceInterfaces(info, NULL, NULL, instance, &ifdata))
+    {
+        _tprintf(TEXT("No SP_INTERFACE_DEVICE_DATA available for this GUID instance\n"));
+        SetupDiDestroyDeviceInfoList(info);
+        return FALSE;
+    }
+
+    // Get size of symbolic link name
+    DWORD ReqLen;
+    SetupDiGetDeviceInterfaceDetail(info, &ifdata, NULL, 0, &ReqLen, NULL);
+    PSP_INTERFACE_DEVICE_DETAIL_DATA ifDetail = (PSP_INTERFACE_DEVICE_DETAIL_DATA)(new TCHAR[ReqLen]);
+    if (ifDetail == NULL)
+    {
+        SetupDiDestroyDeviceInfoList(info);
+        return FALSE;
+    }
+
+    // Get symbolic link name
+    ifDetail->cbSize = sizeof(SP_INTERFACE_DEVICE_DETAIL_DATA);
+    if (!SetupDiGetDeviceInterfaceDetail(info, &ifdata, ifDetail, ReqLen, NULL, NULL))
+    {
+        SetupDiDestroyDeviceInfoList(info);
+        delete[] ifDetail;
+        return FALSE;
+    }
+
+    //DPrint("Symbolic link is %s\n", ifDetail->DevicePath);
+    memcpy(pDeviceName, ifDetail->DevicePath, _tcslen(ifDetail->DevicePath) * sizeof(TCHAR));
+
+    pDeviceName[_tcslen(ifDetail->DevicePath)] = TEXT('\0');
+
+    delete[] ifDetail;
+    SetupDiDestroyDeviceInfoList(info);
+
+    return TRUE;
+}
+
 BOOL ListDeviceInstancePath(char* strVer)
 {
     HDEVINFO hdev = INVALID_HANDLE_VALUE;
@@ -977,7 +1027,8 @@ int getalldevice(LPGUID pClsGuid, LPCTSTR lpEnumerator)
         }
         iIndex++;
         wstring wstrHardid = szHardWareID;
-        printf("%s\n", UnicodeToAscii(wstrHardid).c_str());
+        if (wstrHardid.find(L"8087") != std::wstring::npos)
+            printf("%s\n", UnicodeToAscii(wstrHardid).c_str());
 
         if (CM_Get_DevNode_Status(&dwDevState, &dwProblem, DeviceInfoData.DevInst, 0) != CR_SUCCESS || dwProblem != 0)
         {
@@ -1009,4 +1060,82 @@ int getalldevice(LPGUID pClsGuid, LPCTSTR lpEnumerator)
 
 param_err:
     return nRet;
+}
+
+int GetDeviceInfo(std::wstring hwid)
+{
+    
+    HDEVINFO devs = INVALID_HANDLE_VALUE;
+    do
+    {
+        //获取某类设备集合
+        devs = SetupDiGetClassDevsEx(NULL,
+            NULL,
+            NULL,
+            DIGCF_ALLCLASSES | DIGCF_PRESENT,
+            NULL,
+            NULL,
+            NULL);
+        if (devs == INVALID_HANDLE_VALUE)
+        {
+            break;
+        }
+
+        SP_DEVINFO_LIST_DETAIL_DATA devInfoListDetail;
+        devInfoListDetail.cbSize = sizeof(devInfoListDetail);
+        if (!SetupDiGetDeviceInfoListDetail(devs, &devInfoListDetail))
+        {
+            break;
+        }
+
+        SP_DEVINFO_DATA devInfo;
+        devInfo.cbSize = sizeof(devInfo);
+        for (DWORD devIndex = 0; SetupDiEnumDeviceInfo(devs, devIndex, &devInfo); devIndex++)
+        {
+            //获取硬件ID
+            std::wstring HardId = GetDevcieProperty(devs, &devInfo, SPDRP_HARDWAREID);
+            if (HardId.empty())
+            {
+                continue;
+            }
+            //printf("%d %ws\n", devIndex, HardId.c_str());
+            if (HardId.find(hwid) == std::wstring::npos)
+            {
+                continue;
+            }
+
+            printf("hardid:%d %ws\n", devIndex, HardId.c_str());
+            /*std::wstring devtype = GetDevcieProperty(devs, &devInfo, SPDRP_DEVTYPE);
+            printf("devtype:%d %ws\n", devIndex, devtype.c_str());*/
+
+           /* std::wstring objname = GetDevcieProperty(devs, &devInfo, SPDRP_PHYSICAL_DEVICE_OBJECT_NAME);
+            printf("objname:%d %ws\n", devIndex, objname.c_str());*/
+
+            std::wstring mfg = GetDevcieProperty(devs, &devInfo, SPDRP_MFG);
+            printf("mfg:%d %ws\n", devIndex, mfg.c_str());
+
+            std::wstring fname = GetDevcieProperty(devs, &devInfo, SPDRP_FRIENDLYNAME);
+            printf("fname:%d %ws\n", devIndex, fname.c_str());
+
+            std::wstring des = GetDevcieProperty(devs, &devInfo, SPDRP_DEVICEDESC);
+            printf("des:%d %ws\n", devIndex, des.c_str());
+
+            std::wstring strCls = GetDevcieProperty(devs, &devInfo, SPDRP_CLASS);
+            printf("class:%d %ws\n", devIndex, strCls.c_str());
+
+           /* std::wstring configflag = GetDevcieProperty(devs, &devInfo, SPDRP_CONFIGFLAGS);
+            printf("configflag:%d %ws\n", devIndex, configflag.c_str());*/
+
+            printf("---------------\n\n\n");
+
+        }
+
+    } while (0);
+
+    if (devs != INVALID_HANDLE_VALUE)
+    {
+        SetupDiDestroyDeviceInfoList(devs);
+    }
+
+    return TRUE;
 }

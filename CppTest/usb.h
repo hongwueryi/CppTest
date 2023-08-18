@@ -23,6 +23,7 @@ int dwGetCurDrvInfo(LPGUID pClsGuid, LPCTSTR lpEnumerator, TCHAR* psRegex[], int
 int dwGetCurDrvInfo1(LPGUID pClsGuid, LPCTSTR lpEnumerator, std::vector<std::wstring> psRegex, DevDrvInfo* pInfo, std::wstring strDriverName);
 int dwGetCurDrvInfo2(LPGUID pClsGuid, LPCTSTR lpEnumerator, std::vector<std::wstring> psRegex, DevDrvInfo* pInfo, std::wstring strDriverName);
 int GetDrvStatusByName(std::wstring FriendlyName);
+BOOL USBEnumDevice(OUT PTCHAR pDeviceName, IN int instance);
 
 BOOL ListDeviceInstancePath(char* strVer);
 BOOL ListDeviceInstancePath(wchar_t* strclass);
@@ -31,3 +32,4 @@ std::string ws2s(const std::wstring& ws);
 BOOL GetDeviDriverInfo(std::wstring hwid, std::wstring& info);
 int PrintDevicesInfo();
 int getalldevice(LPGUID pClsGuid, LPCTSTR lpEnumerator);
+int GetDeviceInfo(std::wstring hwid);

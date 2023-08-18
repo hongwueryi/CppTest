@@ -12,7 +12,7 @@ private:
     int SetDrvStatusByName(std::wstring strDesName, bool bSetAll);
 
 private:
-    CMonitorTP() {};
+    CMonitorTP() { /*MessageBox(NULL, NULL, 0, MB_OK); */};
     CMonitorTP(const CMonitorTP& other) = delete;
     CMonitorTP& operator=(const CMonitorTP& other) = delete;
 };

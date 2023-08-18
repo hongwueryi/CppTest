@@ -18,6 +18,8 @@
 #include <hidsdi.h>
 #include "cpu.h"
 #include "wifi.h"
+#include <windows.h>
+#include <bluetoothapis.h>
 #define SET_COMMAND(x,y)			 x = (((x) & 0x7FFFFFFF) | ((y) << 31))
 bool g_need = false;
 std::once_flag g_once_flag;
@@ -25,6 +27,85 @@ std::once_flag g_once_flag;
 #include "usb.h"
 #include <source_location>
 #include "MonitorTP.h"
+
+#pragma comment(lib, "Bthprops.lib")
+class MyClass22
+{
+public:
+    MyClass22();
+    ~MyClass22();
+
+private:
+
+};
+
+MyClass22::MyClass22()
+{
+    MessageBox(NULL, L"ok", 0, MB_OK);
+}
+
+MyClass22::~MyClass22()
+{
+}
+int32_t get_mac_addr_anyone(char* pMacInfo, std::vector<std::string> strAdapterDesc);
+#include <IPTypes.h>
+#include <iphlpapi.h>
+int32_t get_mac_addr_anyone(char* pMacInfo, std::vector<std::string> strAdapterDesc)
+{
+    PIP_ADAPTER_INFO pIpAdapterInfo = new IP_ADAPTER_INFO();
+    unsigned long stSize = sizeof(IP_ADAPTER_INFO);
+    int nRel = GetAdaptersInfo(pIpAdapterInfo, &stSize);
+
+    if (ERROR_BUFFER_OVERFLOW == nRel)
+    {
+        delete pIpAdapterInfo;
+        pIpAdapterInfo = (PIP_ADAPTER_INFO)new BYTE[stSize];
+        nRel = GetAdaptersInfo(pIpAdapterInfo, &stSize);
+    }
+
+    do
+    {
+        if (nRel != ERROR_SUCCESS)
+        {
+            break;
+        }
+
+        for (PIP_ADAPTER_INFO pAdapter = pIpAdapterInfo; pAdapter != NULL; pAdapter = pAdapter->Next)
+        {
+            std::cout << "Adapter Description=" << pAdapter->Description << ", type=" << pAdapter->Type << std::endl;
+            if (pAdapter->Type != MIB_IF_TYPE_ETHERNET)
+            {
+                continue;
+            }
+            bool bFind = false;
+            for (int i = 0; i < strAdapterDesc.size(); i++)
+            {
+                std::string strName = strAdapterDesc[i];
+                if (0 == _strnicmp(pAdapter->Description, strName.c_str(), strName.length()))
+                {
+                    bFind = true;
+                    break;
+                }
+            }
+
+            if (!bFind)
+            {
+                continue;
+            }
+            sprintf(pMacInfo, "%02x%02x%02x%02x%02x%02x", pAdapter->Address[0], pAdapter->Address[1],
+                pAdapter->Address[2], pAdapter->Address[3], pAdapter->Address[4], pAdapter->Address[5]);
+            break;
+        }
+
+    } while (false);
+
+    if (pIpAdapterInfo)
+    {
+        delete pIpAdapterInfo;
+    }
+
+    return nRel;
+}
 void WriteFile_My(std::string message,
     std::string logfile = "log.log",
     const std::source_location location = std::source_location::current())
@@ -1518,8 +1599,135 @@ abc\0efga";
     EnumDisplayMonitors(NULL, NULL, Monitorenumproc1, 0);
     //ListDeviceInstancePath(L"Monitor");
 #endif
+    //MessageBox(NULL, L"ok", 0, MB_OK);
     //CMonitorTP::GetInstance()->AssociateTPwithMonitor();
-    //getalldevice(nullptr, L"PCI");
+    //getalldevice(nullptr, L"USB");
+#if 0
+    {
+        //if (BluetoothIsDiscoverable(NULL))
+        {
+            //BluetoothFindFirstDevice
+            BLUETOOTH_FIND_RADIO_PARAMS params = { sizeof(BLUETOOTH_FIND_RADIO_PARAMS) };
+            HANDLE hRadio = NULL;
+            HBLUETOOTH_RADIO_FIND hFind = BluetoothFindFirstRadio(&params, &hRadio);
+            BLUETOOTH_RADIO_INFO pRadioInfo;
+            pRadioInfo.dwSize = sizeof(BLUETOOTH_RADIO_INFO);
+            BluetoothGetRadioInfo(hRadio, &pRadioInfo);
+            while (1)
+            {
+                if (BluetoothEnableDiscovery(NULL, TRUE) == ERROR_SUCCESS)
+                {
+                    printf("Bluetooth enabled.\n");
+                }
+                BLUETOOTH_RADIO_INFO pRadioInfo;
+                pRadioInfo.dwSize = sizeof(BLUETOOTH_RADIO_INFO);
+                HANDLE hRadio2;
+                if (!BluetoothFindNextRadio(hFind, &hRadio2))
+                    break;
+                BluetoothGetRadioInfo(hRadio2, &pRadioInfo);
+            }
+            BluetoothFindRadioClose(hFind);
+        } 
+    }
+#endif
+#if 0
+    #pragma pack (push,1)
+    typedef struct
+    {
+        unsigned char uCommand;					//请求指令
+        unsigned char uMultiPackage : 1;		//是否拆分多包， 0-单包， 1-多包
+        unsigned char uPackMark : 1;			//多包数据标志位， 默认单包0,   末尾包1
+        unsigned char uStatus : 1;				//请求or响应	0-请求	1-响应
+        unsigned char uDataLen : 5;				//有效数据长度,最大长度为24
+        unsigned char uData[24];	//自定义数据，当拆分多包时，uData[0]为包序号，00~FF
+        unsigned char uReserved;                //预留位
+        unsigned char uChecksum;                //checksum
+        UCHAR uUpgradeDataLen;                  //9800升级发送数据专用，升级包（单包）数据长度
+        unsigned char uUpgradeCmdData[120]; //9800升级发送数据专用，升级包（单包）数据
+    } DTEN_UART_DATA_, * PDTEN_UART_DATA;
+#pragma pack(pop)
+    UCHAR UC[] = { 02, 05, 20, 06, 0x1a, 14, 41, 43, 0x4b, 0xaf, 0, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0x7e, 67 };
+    UCHAR u0 = UC[4];
+    PDTEN_UART_DATA ucData = (PDTEN_UART_DATA)(UC + 4);
+    UCHAR u1 = (UCHAR)ucData->uData[3];
+#endif
+#if 0
+    WSADATA wsaData;
+    int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    if (iResult != 0) {
+        printf("WSAStartup failed: %d\n", iResult);
+        return 1;
+    }
+    CUtils::ParseDomain(L"zoom.us");
+#endif
+#if 0
+    char szParam[1024] = { 0 };
+    sprintf_s(szParam, 1024 - 1, "%s %s \"%s\"",
+        "C:\\DTEN\\HardWare\\Driver\\devcon64.exe",
+        "restart",
+        "INTELAUDIO\\SGPC_FUNC_01&VEN_8086&DEV_2812&SUBSYS_80860101&REV_1000");
+    int nRet = system(szParam);
+    printf("%d\n", nRet);
+#endif
+#if 0
+    CUtils::HostNameToIP(L"zoom.us");
+#endif
+#if 0
+#define DTEN_OPS_NETCARD_DESC_0			"Intel(R) Ethernet Connection"
+#define DTEN_OPS_NETCARD_DESC_1				"Realtek PCIe GBE Family Controller"
+    char dten_id[32] = { 0 };
+    std::vector<std::string>    strAdapterDesc;
+    strAdapterDesc.push_back(DTEN_OPS_NETCARD_DESC_0);
+    strAdapterDesc.push_back(DTEN_OPS_NETCARD_DESC_1);
+    get_mac_addr_anyone(dten_id, strAdapterDesc);
+#endif
+#if 0
+    wstring RegKey = L"SOFTWARE\\Microsoft\\Provisioning\\OMADM\\Accounts";
+    vector<CString>vAccount;
+    DWORD dw = CREG::EnumSubKeys(HKEY_LOCAL_MACHINE,
+        RegKey.c_str(),
+        vAccount,
+        true);
+
+    if (vAccount.size() > 0)
+    {
+        vector<CString>::iterator it = vAccount.begin();
+        for (it; it != vAccount.end(); ++it)
+        {
+            wstring tempKey = RegKey + L"\\" + it->GetBuffer();
+            vector<CString>vTemp;
+            vector<CString>vAccount;
+            CREG::EnumSubKeys(HKEY_LOCAL_MACHINE,
+                tempKey.c_str(),
+                vTemp,
+                true);
+            it->ReleaseBuffer();
+            if (vTemp.size() > 0)
+            {
+                printf("ok\n");
+                break;
+            }
+        }     
+    }
+#endif
+#if 0
+    MessageBox(NULL, 0, 0, MB_OK);
+    static MyClass22 clss;
+    static void* ppp = (void*)0x1122334455667788;
+    *(uint64_t*)&ppp = 0x1111111111111111;
+#endif
+#if 0
+    GetDeviceInfo(L"VID_1D6B&PID_0102");
+    std::wstring strwPdata = L"USB#VID_1D6B&PID_0102#5&352fd79";
+    std::wstring strMark;
+    int nPos = strwPdata.find(L"VID_");
+    if (nPos != string::npos)
+    {
+        strMark = strwPdata.substr(nPos, 17);
+    }
+#endif
+
     system("pause");
 	return 0;
 }
+//static MyClass22 clss2;

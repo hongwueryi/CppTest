@@ -182,7 +182,7 @@ void EnumPortsWdm( std::vector<SSerInfo> &vecSerInfo )
     if ( hDevInfo == INVALID_HANDLE_VALUE )
     {
         std::cout << " 1-1 hDevInfo == INVALID_HANDLE_VALUE" << std::endl;
-        goto end_enum_port;
+        return;
     }
 
     std::cout << "2 get hDevInfo";

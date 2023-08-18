@@ -146,11 +146,13 @@ int main_test()
 	FrontValue = test.front();   //断言终止
 #endif
 	//加锁保证原子操作，方便测试，异常使用断言中断
+#if 0
 	TestQueue::MyQueue<int> test(10);
 	std::thread t(threadProc, test, type_push);
 	t.detach();
 	std::thread t2(threadProc, test, type_pop);
 	t2.detach();
+#endif
 	system("pause");
 	return 0;
 }
